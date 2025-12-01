@@ -2,314 +2,203 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
+# Constants
 FIXED_SHIPPING = 900.0
 
-# Bank config: key, label, fixed_rates or dropdown options
-BANKS = [
-    {
-        "key": "aff",
-        "name": "American First Finance",
-        "dropdown": False,
-        "default_rate": 5.0,
-        "options": [],
-    },
-    {
-        "key": "acima",
-        "name": "Acima",
-        "dropdown": False,
-        "default_rate": 3.0,  # adjust if you want 0 sometimes
-        "options": [],
-    },
-    {
-        "key": "dignify",
-        "name": "Dignify",
-        "dropdown": True,
-        "default_rate": 6.5,
-        "options": [6.5, 9.0],
-    },
-    {
-        "key": "synchrony",
-        "name": "Synchrony",
-        "dropdown": True,
-        "default_rate": 5.0,
-        "options": [5.0, 9.0, 13.5],
-    },
-    {
-        "key": "afterpay",
-        "name": "Afterpay",
-        "dropdown": False,
-        "default_rate": 6.0,
-        "options": [],
-    },
-    {
-        "key": "usbank",
-        "name": "US Bank",
-        "dropdown": True,
-        "default_rate": 5.0,
-        "options": [5.0, 8.0, 10.0, 12.0, 14.0, 16.0],
-    },
-    {
-        "key": "snap",
-        "name": "Snap Finance",
-        "dropdown": False,
-        "default_rate": 2.0,
-        "options": [],
-    },
-    {
-        "key": "progressive",
-        "name": "Progressive",
-        "dropdown": False,
-        "default_rate": 2.0,
-        "options": [],
-    },
-    {
-        "key": "zip",
-        "name": "Zip",
-        "dropdown": False,
-        "default_rate": 6.0,
-        "options": [],
-    },
-    {
-        "key": "klarna",
-        "name": "Klarna",
-        "dropdown": False,
-        "default_rate": 6.0,
-        "options": [],
-    },
-]
 
-TEXTS = {
-    "en": {
-        "title": "ScooterMania - Financing Price Calculator (Web)",
-        "language": "Language",
-        "lang_en": "English",
-        "lang_es": "Español",
-
-        "total_price": "Total price to customer (incl. shipping):",
-        "include_shipping": "Include fixed shipping $900 (not taxed, not revenue)",
-        "tax_rate": "Tax rate % (FL):",
-        "manual_bank_fee": "Manual bank fee % (one or multiple, applies on bike+tax):",
-        "manual_example": "Ex: 4.5 or 4.5, 3",
-        "bike_cost": "Bike cost to you ($):",
-        "seller_commission": "Seller commission ($):",
-
-        "financing_title": "Financing companies (enter AMOUNT financed for this deal):",
-        "financing_note": "Each amount uses that company's merchant fee rate.",
-
-        "calculate": "Calculate",
-        "clear": "Clear",
-
-        "results_title": "Results",
-        "bike_before_tax": "Bike price before tax:",
-        "tax_amount": "Tax amount:",
-        "subtotal_bike_tax": "Subtotal with tax (bike only):",
-        "shipping": "Shipping (not taxed, not revenue):",
-        "cash_total": "Cash total to customer (bike + tax + shipping):",
-
-        "bank_breakdown": "Bank fee breakdown:",
-        "total_bank_fees": "Total bank fees (all companies + manual):",
-
-        "no_pass_title": "If you DO NOT pass bank fees to customer:",
-        "no_pass_fees": "Bank fees you pay:",
-        "no_pass_net": "Net to store (bike only):",
-        "no_pass_profit": "Profit after commission:",
-
-        "pass_title": "If you PASS bank fees to customer:",
-        "pass_customer_price": "Customer price (incl. shipping):",
-        "pass_net": "Net to store (bike only):",
-        "pass_profit": "Profit after commission:",
-
-        "error": "Error",
-        "error_price": "Total price must be greater than 0.",
-        "error_numbers": "Please enter valid numbers.",
-    },
-    "es": {
-        "title": "ScooterMania - Calculadora de Financiamiento (Web)",
-        "language": "Idioma",
-        "lang_en": "Inglés",
-        "lang_es": "Español",
-
-        "total_price": "Precio total al cliente (incl. envío):",
-        "include_shipping": "Incluir envío fijo $900 (sin impuestos, sin ingreso)",
-        "tax_rate": "Impuesto % (FL):",
-        "manual_bank_fee": "Comisión bancaria manual % (una o varias, sobre moto+impuesto):",
-        "manual_example": "Ej: 4.5 o 4.5, 3",
-        "bike_cost": "Costo de la moto para ti ($):",
-        "seller_commission": "Comisión del vendedor ($):",
-
-        "financing_title": "Financieras (ingrese MONTO financiado para esta venta):",
-        "financing_note": "Cada monto usa el % de comisión de la financiera.",
-
-        "calculate": "Calcular",
-        "clear": "Limpiar",
-
-        "results_title": "Resultados",
-        "bike_before_tax": "Precio de la moto antes de impuestos:",
-        "tax_amount": "Monto de impuesto:",
-        "subtotal_bike_tax": "Subtotal con impuesto (solo moto):",
-        "shipping": "Envío (sin impuestos, sin ingreso):",
-        "cash_total": "Total al cliente (moto + imp + envío):",
-
-        "bank_breakdown": "Detalle de comisiones bancarias:",
-        "total_bank_fees": "Total comisiones bancarias (todas + manual):",
-
-        "no_pass_title": "Si NO pasas las comisiones al cliente:",
-        "no_pass_fees": "Comisiones bancarias que pagas:",
-        "no_pass_net": "Neto para la tienda (solo moto):",
-        "no_pass_profit": "Ganancia después de comisión:",
-
-        "pass_title": "Si PASAS las comisiones al cliente:",
-        "pass_customer_price": "Precio al cliente (incl. envío):",
-        "pass_net": "Neto para la tienda (solo moto):",
-        "pass_profit": "Ganancia después de comisión:",
-
-        "error": "Error",
-        "error_price": "El precio total debe ser mayor que 0.",
-        "error_numbers": "Por favor ingrese números válidos.",
-    },
-}
-
-
-def parse_float(s):
+def to_float(val):
+    """Convert a form value to float safely."""
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    s = str(val).replace(",", "").strip()
+    if not s:
+        return 0.0
     try:
-        s = (s or "").strip()
-        if not s:
-            return 0.0
         return float(s)
     except ValueError:
-        raise
+        return 0.0
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    lang = request.form.get("lang", "en")
-    if lang not in ("en", "es"):
-        lang = "en"
-    tx = TEXTS[lang]
+    # Defaults
+    language = "en"
+    theme = "dark"
+    include_shipping = True
 
-    inputs = {
-        "lang": lang,
-        "total_price": request.form.get("total_price", ""),
-        "include_shipping": request.form.get("include_shipping", "on"),
-        "tax_rate": request.form.get("tax_rate", "7.0"),
-        "manual_bank_fee": request.form.get("manual_bank_fee", ""),
-        "bike_cost": request.form.get("bike_cost", ""),
-        "seller_commission": request.form.get("seller_commission", ""),
-        "banks": {},
+    # Form values buffer so we can re-render with what user typed
+    form_values = {
+        "total_price": "",
+        "tax_rate": "7.0",
+        "manual_bank_fee_pct": "",
+        "bike_cost": "",
+        "seller_commission": "",
+        "aff_amount": "",
+        "aff_rate": "5.0",
+        "acima_amount": "",
+        "acima_rate": "0.0",
+        "dignify_amount": "",
+        "dignify_rate": "6.5",
+        "synchrony_amount": "",
+        "synchrony_rate": "5.0",
+        "afterpay_amount": "",
+        "afterpay_rate": "6.0",
+        "usbank_amount": "",
+        "usbank_rate": "5.0",
+        "snap_amount": "",
+        "snap_rate": "2.0",
+        "progressive_amount": "",
+        "progressive_rate": "2.0",
+        "zip_amount": "",
+        "zip_rate": "6.0",
+        "klarna_amount": "",
+        "klarna_rate": "6.0",
     }
 
-    for bank in BANKS:
-        key = bank["key"]
-        amount_field = f"{key}_amount"
-        rate_field = f"{key}_rate"
-        inputs["banks"][key] = {
-            "amount": request.form.get(amount_field, ""),
-            "rate": request.form.get(rate_field, str(bank["default_rate"])),
-        }
-
-    error = None
-    results = None
-    bank_breakdown = []
+    result = None
 
     if request.method == "POST":
-        try:
-            total_price = parse_float(inputs["total_price"])
-            tax_rate = parse_float(inputs["tax_rate"])
-            bike_cost = parse_float(inputs["bike_cost"])
-            seller_commission = parse_float(inputs["seller_commission"])
+        action = request.form.get("action", "calculate")
+        language = request.form.get("language", "en")
+        theme = request.form.get("theme", "dark")
 
-            if total_price <= 0:
-                error = tx["error_price"]
+        include_shipping = request.form.get("include_shipping") == "on"
+
+        # Update form_values from POST so if there is an error we keep what user typed
+        for key in form_values.keys():
+            form_values[key] = request.form.get(key, form_values[key])
+
+        if action == "clear":
+            # Reset to defaults (we already have form_values defaults defined)
+            result = None
+        else:
+            # ---- CALCULATIONS ----
+            total_price = to_float(form_values["total_price"])
+            tax_rate = to_float(form_values["tax_rate"])
+            manual_bank_fee_pct = to_float(form_values["manual_bank_fee_pct"])
+            bike_cost = to_float(form_values["bike_cost"])
+            seller_commission = to_float(form_values["seller_commission"])
+
+            # Shipping rule
+            shipping_amount = FIXED_SHIPPING if include_shipping else 0.0
+
+            # Tax is applied ONLY on the bike (no shipping)
+            taxable_total = max(total_price - shipping_amount, 0.0)
+
+            if tax_rate > 0:
+                bike_price_before_tax = taxable_total / (1.0 + tax_rate / 100.0)
+                tax_amount = taxable_total - bike_price_before_tax
             else:
-                include_shipping = inputs["include_shipping"] == "on"
-                shipping = FIXED_SHIPPING if include_shipping else 0.0
+                bike_price_before_tax = taxable_total
+                tax_amount = 0.0
 
-                taxable_total = total_price - shipping
-                if taxable_total < 0:
-                    error = tx["error_price"]
-                else:
-                    if tax_rate > 0:
-                        bike_before_tax = taxable_total / (1 + tax_rate / 100.0)
-                    else:
-                        bike_before_tax = taxable_total
-                    tax_amount = taxable_total - bike_before_tax
+            # Financing companies: each one is AMOUNT financed with that bank,
+            # and a merchant fee RATE % applied to that amount.
+            banks = [
+                ("aff", "American First Finance", "aff_amount", "aff_rate"),
+                ("acima", "Acima", "acima_amount", "acima_rate"),
+                ("dignify", "Dignify", "dignify_amount", "dignify_rate"),
+                ("synchrony", "Synchrony", "synchrony_amount", "synchrony_rate"),
+                ("afterpay", "Afterpay", "afterpay_amount", "afterpay_rate"),
+                ("usbank", "US Bank", "usbank_amount", "usbank_rate"),
+                ("snap", "Snap Finance", "snap_amount", "snap_rate"),
+                ("progressive", "Progressive", "progressive_amount", "progressive_rate"),
+                ("zip", "Zip", "zip_amount", "zip_rate"),
+                ("klarna", "Klarna", "klarna_amount", "klarna_rate"),
+            ]
 
-                    # Manual bank fee % on bike+tax total
-                    manual_fee_str = inputs["manual_bank_fee"].strip()
-                    manual_fee_amount = 0.0
-                    manual_parts = []
-                    if manual_fee_str:
-                        for part in manual_fee_str.replace("%", "").split(","):
-                            p = part.strip()
-                            if not p:
-                                continue
-                            pct = float(p)
-                            manual_fee_amount += taxable_total * (pct / 100.0)
-                            manual_parts.append(pct)
+            bank_details = []
+            total_bank_fees_dollars = 0.0
 
-                    # Per-bank fees on financed AMOUNTS
-                    total_bank_fees_banks = 0.0
-                    for bank in BANKS:
-                        key = bank["key"]
-                        name = bank["name"]
-                        amount_str = inputs["banks"][key]["amount"]
-                        amount = parse_float(amount_str)
-                        if amount <= 0:
-                            continue
+            for code, label, amount_key, rate_key in banks:
+                amount = to_float(form_values[amount_key])
+                rate = to_float(form_values[rate_key])
 
-                        if bank["dropdown"]:
-                            rate = parse_float(inputs["banks"][key]["rate"])
-                        else:
-                            rate = bank["default_rate"]
+                if amount > 0 and rate > 0:
+                    fee = amount * rate / 100.0
+                    bank_details.append(
+                        {
+                            "label": label,
+                            "amount": amount,
+                            "rate": rate,
+                            "fee": fee,
+                        }
+                    )
+                    total_bank_fees_dollars += fee
 
-                        fee = amount * (rate / 100.0)
-                        total_bank_fees_banks += fee
-                        bank_breakdown.append(
-                            f"{name}: ${amount:,.2f} × {rate:.2f}% = ${fee:,.2f}"
-                        )
-
-                    if manual_fee_amount > 0 and manual_parts:
-                        mpct = " + ".join(f"{p:.2f}%" for p in manual_parts)
-                        bank_breakdown.append(
-                            f"Manual: {mpct} on ${taxable_total:,.2f} = ${manual_fee_amount:,.2f}"
-                        )
-
-                    total_bank_fees = total_bank_fees_banks + manual_fee_amount
-
-                    # Scenario A: DO NOT pass fees
-                    net_no_pass = bike_before_tax - total_bank_fees
-                    profit_no_pass = net_no_pass - bike_cost - seller_commission
-
-                    # Scenario B: PASS fees
-                    customer_price_pass = total_price + total_bank_fees
-                    net_pass = bike_before_tax
-                    profit_pass = net_pass - bike_cost - seller_commission
-
-                    results = {
-                        "bike_before_tax": bike_before_tax,
-                        "tax_amount": tax_amount,
-                        "taxable_total": taxable_total,
-                        "shipping": shipping,
-                        "cash_total": total_price,
-                        "total_bank_fees": total_bank_fees,
-                        "net_no_pass": net_no_pass,
-                        "profit_no_pass": profit_no_pass,
-                        "customer_price_pass": customer_price_pass,
-                        "net_pass": net_pass,
-                        "profit_pass": profit_pass,
+            # Manual bank fee % applies on bike+tax (taxable_total)
+            manual_fee_amount = taxable_total * manual_bank_fee_pct / 100.0
+            if manual_fee_amount > 0:
+                bank_details.append(
+                    {
+                        "label": "Manual bank fee",
+                        "amount": taxable_total,
+                        "rate": manual_bank_fee_pct,
+                        "fee": manual_fee_amount,
                     }
+                )
+            total_bank_fees_dollars += manual_fee_amount
 
-        except ValueError:
-            error = tx["error_numbers"]
+            if taxable_total > 0:
+                total_bank_fee_pct_vs_bike = (
+                    total_bank_fees_dollars / taxable_total * 100.0
+                )
+            else:
+                total_bank_fee_pct_vs_bike = 0.0
+
+            # Case 1: You DO NOT pass any fees to customer
+            net_to_store_no_pass_bike_only = taxable_total - total_bank_fees_dollars
+            profit_no_pass = (
+                net_to_store_no_pass_bike_only - bike_cost - seller_commission
+            )
+
+            # Case 2: You PASS all fees to customer.
+            # We simply add bank fees on top of the original customer price.
+            customer_price_pass = total_price + total_bank_fees_dollars
+            net_to_store_pass_bike_only = taxable_total  # you get full bike+tax
+            profit_pass = net_to_store_pass_bike_only - bike_cost - seller_commission
+
+            # Build a human-readable breakdown string for banks
+            breakdown_parts = []
+            for bd in bank_details:
+                breakdown_parts.append(
+                    f"{bd['label']} ${bd['amount']:,.2f} @ {bd['rate']:.2f}% = ${bd['fee']:,.2f}"
+                )
+            bank_breakdown_str = " + ".join(breakdown_parts) if breakdown_parts else "-"
+
+            result = {
+                "bike_price_before_tax": bike_price_before_tax,
+                "tax_amount": tax_amount,
+                "subtotal_with_tax_bike_only": taxable_total,
+                "shipping_amount": shipping_amount,
+                "total_to_customer": taxable_total + shipping_amount,
+                "total_bank_fees_dollars": total_bank_fees_dollars,
+                "total_bank_fee_pct_vs_bike": total_bank_fee_pct_vs_bike,
+                "net_to_store_no_pass_bike_only": net_to_store_no_pass_bike_only,
+                "profit_no_pass": profit_no_pass,
+                "customer_price_pass": customer_price_pass,
+                "net_to_store_pass_bike_only": net_to_store_pass_bike_only,
+                "profit_pass": profit_pass,
+                "bank_breakdown_str": bank_breakdown_str,
+            }
+
+    else:
+        # GET: defaults
+        language = "en"
+        theme = "dark"
+        include_shipping = True
+        result = None
 
     return render_template(
         "index.html",
-        tx=tx,
-        banks=BANKS,
-        inputs=inputs,
-        results=results,
-        bank_breakdown=bank_breakdown,
-        error=error,
+        language=language,
+        theme=theme,
+        include_shipping=include_shipping,
+        form=form_values,
+        result=result,
+        fixed_shipping=FIXED_SHIPPING,
     )
 
 
