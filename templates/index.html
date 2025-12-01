@@ -1,593 +1,913 @@
-<!doctype html>
-<html lang="{{ 'en' if language == 'en' else 'es' }}">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>ScooterMania - Financing Price Calculator (Web)</title>
+  <meta charset="UTF-8" />
+  <title>ScooterMania – Financing Price Calculator (Web)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Inline CSS, no static/style.css needed -->
   <style>
     :root {
-      --bg-dark: #111111;
-      --bg-card-dark: #1e1e1e;
-      --bg-light: #f5f5f5;
-      --bg-card-light: #ffffff;
-      --accent: #c62828;
-      --accent-soft: #ff5a5a;
+      --bg-dark: #050608;
+      --bg-card: #14151a;
+      --bg-card-light: #f5f5f5;
+      --accent: #e53935;
+      --accent-soft: #ff6f60;
       --text-light: #ffffff;
-      --text-dark: #222222;
-      --border-radius: 12px;
+      --text-dark: #1b1c20;
+      --border-soft: #2a2c36;
+      --radius-xl: 18px;
     }
 
     * {
       box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     body {
       margin: 0;
-      padding: 0;
-    }
-
-    body.dark {
-      background: var(--bg-dark);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: #000000;
       color: var(--text-light);
-    }
-
-    body.light {
-      background: var(--bg-light);
-      color: var(--text-dark);
+      display: flex;
+      justify-content: center;
     }
 
     .page {
-      max-width: 1024px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: 1100px;
       padding: 16px;
     }
 
-    .title {
-      text-align: left;
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--accent-soft);
-      margin-bottom: 12px;
-    }
-
-    .card {
-      border-radius: var(--border-radius);
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-
-    body.dark .card {
-      background: var(--bg-card-dark);
-      box-shadow: 0 0 0 1px #333;
-    }
-
-    body.light .card {
-      background: var(--bg-card-light);
-      box-shadow: 0 0 0 1px #ddd;
-    }
-
-    .card-title {
-      font-size: 1rem;
-      font-weight: 600;
+    .header {
+      text-align: center;
       margin-bottom: 10px;
     }
 
-    label {
-      font-size: 0.82rem;
+    .header-logo {
+      width: 72px;
       display: block;
-      margin-bottom: 4px;
+      margin: 0 auto 8px;
     }
 
-    input[type="text"],
-    input[type="number"],
-    select {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #555;
+    .header-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent-soft);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+    }
+
+    .card-light {
+      background: var(--bg-card-light);
+      color: var(--text-dark);
+      border-color: #dedede;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--accent-soft);
+    }
+
+    label {
+      display: block;
       font-size: 0.85rem;
-      background: transparent;
-      color: inherit;
-    }
-
-    body.light input[type="text"],
-    body.light input[type="number"],
-    body.light select {
-      border-color: #bbb;
-      background: #ffffff;
-      color: #111;
+      margin-bottom: 4px;
     }
 
     .row {
       display: flex;
-      gap: 10px;
       flex-wrap: wrap;
+      gap: 12px;
     }
 
     .col-50 {
-      flex: 1 1 0;
-      min-width: 180px;
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 7px 10px;
+      border-radius: 10px;
+      border: 1px solid #3a3b46;
+      background: #0e0f14;
+      color: var(--text-light);
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .card-light input[type="number"],
+    .card-light input[type="text"],
+    .card-light select {
+      background: #ffffff;
+      color: var(--text-dark);
+      border-color: #c8c8c8;
+    }
+
+    input::placeholder {
+      color: #777;
     }
 
     .checkbox-row {
       display: flex;
       align-items: center;
       gap: 6px;
-      margin: 6px 0 10px 0;
+      margin: 6px 0 10px;
       font-size: 0.8rem;
+    }
+
+    .checkbox-row input {
+      width: auto;
     }
 
     .btn-row {
       display: flex;
-      gap: 10px;
-      margin-top: 12px;
+      gap: 8px;
+      margin: 10px 0 0;
     }
 
     button {
       border-radius: 999px;
-      padding: 8px 18px;
       border: none;
-      cursor: pointer;
+      padding: 9px 14px;
       font-size: 0.9rem;
+      cursor: pointer;
       font-weight: 600;
     }
 
-    .btn-accent {
-      background: var(--accent);
-      color: #fff;
+    .btn-primary {
       flex: 1;
+      background: linear-gradient(90deg, var(--accent), #ff7043);
+      color: #fff;
     }
 
-    .btn-muted {
-      background: #666;
-      color: #eee;
-      flex: 0 0 120px;
+    .btn-secondary {
+      width: 120px;
+      background: #2b2d36;
+      color: #f5f5f5;
     }
 
-    body.light .btn-muted {
-      background: #ddd;
+    .btn-secondary.card-light {
+      background: #e0e0e0;
       color: #222;
     }
 
-    button:hover {
-      filter: brightness(1.08);
+    .results-list {
+      font-size: 0.8rem;
+      line-height: 1.45;
+      margin: 0;
+      padding-left: 16px;
     }
 
-    .logo {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    .logo-text {
-      font-weight: 700;
-      letter-spacing: 0.04em;
+    .results-list strong {
       color: var(--accent-soft);
-      font-size: 1.1rem;
     }
 
     .financing-grid {
       display: grid;
-      grid-template-columns: 1.3fr 0.9fr 1.1fr;
-      gap: 8px;
-      align-items: center;
-      font-size: 0.8rem;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
     }
 
-    .financing-grid-header {
+    .fin-row-label {
+      font-size: 0.78rem;
       font-weight: 600;
-      font-size: 0.8rem;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
-    .financing-company-label {
-      font-size: 0.8rem;
+    .fin-row-sub {
+      font-size: 0.72rem;
+      opacity: 0.8;
+    }
+
+    .fin-mini-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .fin-mini-row small {
+      font-size: 0.72rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 0.7rem;
+      margin-left: 4px;
     }
 
     @media (max-width: 768px) {
+      .card {
+        padding: 12px 12px;
+      }
+
+      .header-title {
+        font-size: 1.25rem;
+      }
+
       .financing-grid {
         grid-template-columns: 1fr;
       }
-    }
 
-    .results {
-      font-size: 0.8rem;
-      line-height: 1.4;
-      margin-top: 6px;
-    }
-
-    .results-line {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 3px;
-    }
-
-    .results-label {
-      flex: 1;
-    }
-
-    .results-value {
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    hr {
-      margin: 10px 0;
-      border: none;
-      height: 1px;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    body.light hr {
-      background: rgba(0, 0, 0, 0.08);
+      .btn-secondary {
+        width: 90px;
+      }
     }
   </style>
 </head>
-<body class="{{ theme }}">
+<body>
 <div class="page">
+  <header class="header">
+    <!-- If you want to serve the actual PNG from static, you can change src later -->
+    <img src="https://i.imgur.com/9eR0M2L.png" alt="ScooterMania" class="header-logo" />
+    <div class="header-title" data-i18n="title">
+      ScooterMania – Financing Price Calculator (Web)
+    </div>
+  </header>
 
-  <div class="logo">
-    <!-- You can replace this with an <img> if you host the PNG somewhere -->
-    <div class="logo-text">SCOOTERMANIA</div>
-  </div>
-
-  <div class="title">
-    ScooterMania – Financing Price Calculator (Web)
-  </div>
-
-  <form method="post">
-    <!-- Top card: language, theme, core inputs -->
-    <div class="card">
-      <div class="row">
-        <div class="col-50">
-          <label>
-            {{ 'Language' if language == 'en' else 'Idioma' }}:
-          </label>
-          <select name="language">
-            <option value="en" {% if language == 'en' %}selected{% endif %}>English</option>
-            <option value="es" {% if language == 'es' %}selected{% endif %}>Español</option>
-          </select>
-        </div>
-        <div class="col-50">
-          <label>
-            {{ 'Theme' if language == 'en' else 'Tema' }}:
-          </label>
-          <select name="theme">
-            <option value="dark" {% if theme == 'dark' %}selected{% endif %}>Dark</option>
-            <option value="light" {% if theme == 'light' %}selected{% endif %}>Light</option>
-          </select>
-        </div>
+  <!-- TOP SETTINGS CARD -->
+  <section class="card" id="main-card">
+    <div class="row">
+      <div class="col-50">
+        <label for="language" data-i18n="label_language">Language</label>
+        <select id="language">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+        </select>
       </div>
+      <div class="col-50">
+        <label for="theme" data-i18n="label_theme">Theme</label>
+        <select id="theme">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </div>
+    </div>
 
-      <hr />
-
-      <label>
-        {{ 'Total price to customer (incl. shipping):' if language == 'en'
-           else 'Precio total al cliente (incl. envío):' }}
+    <div style="margin-top:10px;">
+      <label for="total_price" data-i18n="label_total_price">
+        Total price to customer (incl. shipping):
       </label>
-      <input type="number" step="0.01" name="total_price" value="{{ form.total_price }}" />
+      <input id="total_price" type="number" min="0" step="0.01" placeholder="3361" />
+    </div>
 
-      <div class="checkbox-row">
-        <input type="checkbox" id="include_shipping" name="include_shipping"
-               {% if include_shipping %}checked{% endif %} />
-        <label for="include_shipping">
-          {{ 'Include fixed shipping $' if language == 'en' else 'Incluir envío fijo $' }}{{ "%.0f"|format(fixed_shipping) }}
-          ({{ 'not taxed, not revenue' if language == 'en' else 'sin impuestos, no es ganancia' }})
+    <div class="checkbox-row">
+      <input type="checkbox" id="include_shipping" checked />
+      <label for="include_shipping" data-i18n="label_include_shipping">
+        Include fixed shipping $900 (not taxed, not revenue)
+      </label>
+    </div>
+
+    <div class="row">
+      <div class="col-50">
+        <label for="tax_rate" data-i18n="label_tax_rate">Tax rate % (FL):</label>
+        <input id="tax_rate" type="number" step="0.01" placeholder="7.0" />
+      </div>
+      <div class="col-50">
+        <label for="manual_bank_fee" data-i18n="label_manual_bank_fee">
+          Manual bank fee % (one or multiple, applies on bike+tax):
         </label>
-      </div>
-
-      <label>
-        {{ 'Tax rate % (FL):' if language == 'en' else 'Impuesto % (Florida):' }}
-      </label>
-      <input type="number" step="0.01" name="tax_rate" value="{{ form.tax_rate }}" />
-
-      <label>
-        {{ 'Manual bank fee % (one or multiple; applies on bike+tax):'
-           if language == 'en'
-           else 'Comisión bancaria manual % (una o varias; aplicado a moto+impuesto):' }}
-      </label>
-      <input type="number" step="0.01" name="manual_bank_fee_pct" value="{{ form.manual_bank_fee_pct }}" />
-
-      <label>
-        {{ 'Bike cost to you ($):' if language == 'en'
-           else 'Costo de la moto para ti ($):' }}
-      </label>
-      <input type="number" step="0.01" name="bike_cost" value="{{ form.bike_cost }}" />
-
-      <label>
-        {{ 'Seller commission ($):' if language == 'en'
-           else 'Comisión del vendedor ($):' }}
-      </label>
-      <input type="number" step="0.01" name="seller_commission" value="{{ form.seller_commission }}" />
-
-      <div class="btn-row">
-        <button class="btn-accent" type="submit" name="action" value="calculate">
-          {{ 'Calculate' if language == 'en' else 'Calcular' }}
-        </button>
-        <button class="btn-muted" type="submit" name="action" value="clear">
-          {{ 'Clear' if language == 'en' else 'Limpiar' }}
-        </button>
+        <input id="manual_bank_fee" type="number" step="0.01" placeholder="Ex: 4.5 or 4.5, 3" />
       </div>
     </div>
 
-    <!-- Financing companies -->
-    <div class="card">
-      <div class="card-title">
-        {{ 'Financing companies (enter AMOUNT financed for this deal):'
-           if language == 'en'
-           else 'Financieras (ingrese el MONTO financiado para esta venta):' }}
+    <div class="row" style="margin-top:10px;">
+      <div class="col-50">
+        <label for="bike_cost" data-i18n="label_bike_cost">Bike cost to you ($):</label>
+        <input id="bike_cost" type="number" step="0.01" />
       </div>
-
-      <div class="financing-grid-header">
-        {{ 'Each amount uses that company\'s merchant fee rate.' if language == 'en'
-           else 'Cada monto usa el porcentaje de comisión de esa financiera.' }}
-      </div>
-
-      <div class="financing-grid" style="margin-top: 8px;">
-        <!-- Header labels (desktop only visually, but fine on mobile) -->
-        <div class="financing-company-label"><strong>{{ 'Company' if language == 'en' else 'Compañía' }}</strong></div>
-        <div><strong>{{ 'Amount financed ($)' if language == 'en' else 'Monto financiado ($)' }}</strong></div>
-        <div><strong>{{ 'Rate % (merchant fee)' if language == 'en' else '% comisión' }}</strong></div>
-
-        <!-- American First Finance -->
-        <div class="financing-company-label">American First Finance</div>
-        <div>
-          <input type="number" step="0.01" name="aff_amount" value="{{ form.aff_amount }}" />
-        </div>
-        <div>
-          <input type="number" step="0.01" name="aff_rate" value="{{ form.aff_rate }}" />
-        </div>
-
-        <!-- Acima -->
-        <div class="financing-company-label">Acima</div>
-        <div>
-          <input type="number" step="0.01" name="acima_amount" value="{{ form.acima_amount }}" />
-        </div>
-        <div>
-          <input type="number" step="0.01" name="acima_rate" value="{{ form.acima_rate }}" />
-        </div>
-
-        <!-- Dignify (dropdown options 6.5 or 9) -->
-        <div class="financing-company-label">Dignify</div>
-        <div>
-          <input type="number" step="0.01" name="dignify_amount" value="{{ form.dignify_amount }}" />
-        </div>
-        <div>
-          <select name="dignify_rate">
-            {% for opt in [6.5, 9.0] %}
-            <option value="{{ opt }}" {% if form.dignify_rate|float == opt %}selected{% endif %}>
-              {{ "%.2f"|format(opt) }}%
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Synchrony (5, 9, 13.5) -->
-        <div class="financing-company-label">Synchrony</div>
-        <div>
-          <input type="number" step="0.01" name="synchrony_amount" value="{{ form.synchrony_amount }}" />
-        </div>
-        <div>
-          <select name="synchrony_rate">
-            {% for opt in [5.0, 9.0, 13.5] %}
-            <option value="{{ opt }}" {% if form.synchrony_rate|float == opt %}selected{% endif %}>
-              {{ "%.2f"|format(opt) }}%
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Afterpay -->
-        <div class="financing-company-label">Afterpay</div>
-        <div>
-          <input type="number" step="0.01" name="afterpay_amount" value="{{ form.afterpay_amount }}" />
-        </div>
-        <div>
-          <input type="number" step="0.01" name="afterpay_rate" value="{{ form.afterpay_rate }}" />
-        </div>
-
-        <!-- US Bank (5, 8, 10, 12, 14, 16) -->
-        <div class="financing-company-label">US Bank</div>
-        <div>
-          <input type="number" step="0.01" name="usbank_amount" value="{{ form.usbank_amount }}" />
-        </div>
-        <div>
-          <select name="usbank_rate">
-            {% for opt in [5.0, 8.0, 10.0, 12.0, 14.0, 16.0] %}
-            <option value="{{ opt }}" {% if form.usbank_rate|float == opt %}selected{% endif %}>
-              {{ "%.2f"|format(opt) }}%
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Snap Finance -->
-        <div class="financing-company-label">Snap Finance</div>
-        <div>
-          <input type="number" step="0.01" name="snap_amount" value="{{ form.snap_amount }}" />
-        </div>
-        <div>
-          <input type="number" step="0.01" name="snap_rate" value="{{ form.snap_rate }}" />
-        </div>
-
-        <!-- Progressive -->
-        <div class="financing-company-label">Progressive</div>
-        <div>
-          <input type="number" step="0.01" name="progressive_amount" value="{{ form.progressive_amount }}" />
-        </div>
-        <div>
-          <input type="number" step="0.01" name="progressive_rate" value="{{ form.progressive_rate }}" />
-        </div>
-
-        <!-- Zip -->
-        <div class="financing-company-label">Zip</div>
-        <div>
-          <input type="number" step="0.01" name="zip_amount" value="{{ form.zip_amount }}" />
-        </div>
-        <div>
-          <input type="number" step="0.01" name="zip_rate" value="{{ form.zip_rate }}" />
-        </div>
-
-        <!-- Klarna -->
-        <div class="financing-company-label">Klarna</div>
-        <div>
-          <input type="number" step="0.01" name="klarna_amount" value="{{ form.klarna_amount }}" />
-        </div>
-        <div>
-          <input type="number" step="0.01" name="klarna_rate" value="{{ form.klarna_rate }}" />
-        </div>
+      <div class="col-50">
+        <label for="seller_commission" data-i18n="label_seller_commission">
+          Seller commission ($):
+        </label>
+        <input id="seller_commission" type="number" step="0.01" />
       </div>
     </div>
 
-    <!-- Results -->
-    <div class="card">
-      <div class="card-title">
-        {{ 'Results' if language == 'en' else 'Resultados' }}
-      </div>
-
-      {% if result %}
-      <div class="results">
-        <div class="results-line">
-          <div class="results-label">
-            {{ 'Bike price before tax:' if language == 'en'
-               else 'Precio de la moto antes de impuestos:' }}
-          </div>
-          <div class="results-value">${{ "%.2f"|format(result.bike_price_before_tax) }}</div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ 'Tax amount:' if language == 'en' else 'Monto de impuestos:' }}
-          </div>
-          <div class="results-value">${{ "%.2f"|format(result.tax_amount) }}</div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ 'Subtotal with tax (bike only):' if language == 'en'
-               else 'Subtotal con impuestos (solo moto):' }}
-          </div>
-          <div class="results-value">${{ "%.2f"|format(result.subtotal_with_tax_bike_only) }}</div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ 'Shipping (not taxed, not revenue):' if language == 'en'
-               else 'Envío (sin impuestos, no es ganancia):' }}
-          </div>
-          <div class="results-value">${{ "%.2f"|format(result.shipping_amount) }}</div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ 'Cash total to customer (bike + tax + shipping):' if language == 'en'
-               else 'Total al cliente (moto + impuestos + envío):' }}
-          </div>
-          <div class="results-value">${{ "%.2f"|format(result.total_to_customer) }}</div>
-        </div>
-
-        <hr />
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ 'Bank fee breakdown:' if language == 'en'
-               else 'Detalle de comisiones bancarias:' }}
-          </div>
-          <div class="results-value" style="white-space: normal; text-align: right;">
-            {{ result.bank_breakdown_str }}
-          </div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ 'Total bank fees (all companies):' if language == 'en'
-               else 'Total comisiones bancarias:' }}
-          </div>
-          <div class="results-value">
-            ${{ "%.2f"|format(result.total_bank_fees_dollars) }}
-          </div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ 'Total bank fees vs bike+tax (%):' if language == 'en'
-               else 'Comisiones totales vs moto+impuesto (%):' }}
-          </div>
-          <div class="results-value">
-            {{ "%.2f"|format(result.total_bank_fee_pct_vs_bike) }}%
-          </div>
-        </div>
-
-        <hr />
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ '[If you DO NOT pass fees] Net to store (bike only):'
-               if language == 'en'
-               else '[Si NO pasas las comisiones] Neto para la tienda (solo moto):' }}
-          </div>
-          <div class="results-value">
-            ${{ "%.2f"|format(result.net_to_store_no_pass_bike_only) }}
-          </div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ '[If you DO NOT pass fees] Profit after commission:'
-               if language == 'en'
-               else '[Si NO pasas las comisiones] Ganancia después de comisión:' }}
-          </div>
-          <div class="results-value">
-            ${{ "%.2f"|format(result.profit_no_pass) }}
-          </div>
-        </div>
-
-        <hr />
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ '[If you PASS fees] Customer price (incl. shipping):'
-               if language == 'en'
-               else '[Si PASAS las comisiones] Precio al cliente (incl. envío):' }}
-          </div>
-          <div class="results-value">
-            ${{ "%.2f"|format(result.customer_price_pass) }}
-          </div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ '[If you PASS fees] Net to store (bike only):'
-               if language == 'en'
-               else '[Si PASAS las comisiones] Neto para la tienda (solo moto):' }}
-          </div>
-          <div class="results-value">
-            ${{ "%.2f"|format(result.net_to_store_pass_bike_only) }}
-          </div>
-        </div>
-
-        <div class="results-line">
-          <div class="results-label">
-            {{ '[If you PASS fees] Profit after commission:'
-               if language == 'en'
-               else '[Si PASAS las comisiones] Ganancia después de comisión:' }}
-          </div>
-          <div class="results-value">
-            ${{ "%.2f"|format(result.profit_pass) }}
-          </div>
-        </div>
-      </div>
-      {% else %}
-      <div style="font-size: 0.8rem; opacity: 0.8;">
-        {{ 'Enter values above and press Calculate.' if language == 'en'
-           else 'Ingresa los valores arriba y presiona Calcular.' }}
-      </div>
-      {% endif %}
+    <div class="btn-row">
+      <button id="btn-calc" class="btn-primary" data-i18n="btn_calculate">
+        Calculate
+      </button>
+      <button id="btn-clear" class="btn-secondary" data-i18n="btn_clear">
+        Clear
+      </button>
     </div>
-  </form>
+  </section>
+
+  <!-- FINANCING COMPANIES CARD -->
+  <section class="card" id="fin-card">
+    <div class="section-title" data-i18n="fin_title">
+      Financing companies (enter AMOUNT financed for this deal):
+    </div>
+    <p style="font-size:0.8rem;margin-top:-4px;margin-bottom:10px;" data-i18n="fin_subtitle">
+      Each amount uses that company's merchant fee rate.
+    </p>
+
+    <div class="financing-grid">
+      <!-- American First Finance -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="aff_name">American First Finance</span>
+          <span class="badge">5%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <input id="aff_rate" type="number" step="0.01" value="5.0" />
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="aff_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Acima -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="acima_name">Acima</span>
+          <span class="badge">0% / 3%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <input id="acima_rate" type="number" step="0.01" value="0.0" />
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="acima_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Dignify (dropdown) -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="dignify_name">Dignify</span>
+          <span class="badge">6.5% / 9%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <select id="dignify_rate">
+              <option value="6.5">6.5</option>
+              <option value="9.0">9.0</option>
+            </select>
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="dignify_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Synchrony (dropdown) -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="synchrony_name">Synchrony</span>
+          <span class="badge">5% / 9% / 13.5%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <select id="synchrony_rate">
+              <option value="5.0">5.0</option>
+              <option value="9.0">9.0</option>
+              <option value="13.5">13.5</option>
+            </select>
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="synchrony_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Afterpay -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="afterpay_name">Afterpay</span>
+          <span class="badge">6%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <input id="afterpay_rate" type="number" step="0.01" value="6.0" />
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="afterpay_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- US Bank (dropdown) -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="usbank_name">US Bank</span>
+          <span class="badge">5 / 8 / 10 / 12 / 14 / 16%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <select id="usbank_rate">
+              <option value="5.0">5.0</option>
+              <option value="8.0">8.0</option>
+              <option value="10.0">10.0</option>
+              <option value="12.0">12.0</option>
+              <option value="14.0">14.0</option>
+              <option value="16.0">16.0</option>
+            </select>
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="usbank_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Snap Finance -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="snap_name">Snap Finance</span>
+          <span class="badge">2%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <input id="snap_rate" type="number" step="0.01" value="2.0" />
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="snap_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Progressive -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="progressive_name">Progressive</span>
+          <span class="badge">2%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <input id="progressive_rate" type="number" step="0.01" value="2.0" />
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="progressive_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Zip -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="zip_name">Zip</span>
+          <span class="badge">6%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <input id="zip_rate" type="number" step="0.01" value="6.0" />
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="zip_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Klarna -->
+      <div>
+        <div class="fin-row-label">
+          <span data-i18n="klarna_name">Klarna</span>
+          <span class="badge">6%</span>
+        </div>
+        <div class="fin-mini-row">
+          <div>
+            <small data-i18n="label_rate">Rate %</small>
+            <input id="klarna_rate" type="number" step="0.01" value="6.0" />
+          </div>
+          <div>
+            <small data-i18n="label_amount">Amount financed ($)</small>
+            <input id="klarna_amount" type="number" step="0.01" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS CARD -->
+  <section class="card card-light" id="results-card">
+    <div class="section-title" data-i18n="results_title">
+      Results
+    </div>
+    <ul class="results-list" id="results-list">
+      <!-- Filled by JS -->
+    </ul>
+  </section>
 </div>
+
+<script>
+  // --- Simple translations (client-side only) ---
+
+  const i18n = {
+    en: {
+      title: "ScooterMania – Financing Price Calculator (Web)",
+      label_language: "Language",
+      label_theme: "Theme",
+      label_total_price: "Total price to customer (incl. shipping):",
+      label_include_shipping: "Include fixed shipping $900 (not taxed, not revenue)",
+      label_tax_rate: "Tax rate % (FL):",
+      label_manual_bank_fee:
+        "Manual bank fee % (one or multiple, applies on bike+tax):",
+      label_bike_cost: "Bike cost to you ($):",
+      label_seller_commission: "Seller commission ($):",
+      btn_calculate: "Calculate",
+      btn_clear: "Clear",
+
+      fin_title: "Financing companies (enter AMOUNT financed for this deal):",
+      fin_subtitle: "Each amount uses that company's merchant fee rate.",
+
+      label_rate: "Rate %",
+      label_amount: "Amount financed ($)",
+
+      aff_name: "American First Finance",
+      acima_name: "Acima",
+      dignify_name: "Dignify",
+      synchrony_name: "Synchrony",
+      afterpay_name: "Afterpay",
+      usbank_name: "US Bank",
+      snap_name: "Snap Finance",
+      progressive_name: "Progressive",
+      zip_name: "Zip",
+      klarna_name: "Klarna",
+
+      results_title: "Results",
+    },
+    es: {
+      title: "ScooterMania – Calculadora de Precio con Financiamiento (Web)",
+      label_language: "Idioma",
+      label_theme: "Tema",
+      label_total_price: "Precio total al cliente (incl. envío):",
+      label_include_shipping:
+        "Incluir envío fijo de $900 (no se grava ni cuenta como ingreso)",
+      label_tax_rate: "Impuesto % (FL):",
+      label_manual_bank_fee:
+        "Comisión bancaria manual % (una o varias, aplica sobre moto+impuesto):",
+      label_bike_cost: "Costo de la moto para ti ($):",
+      label_seller_commission: "Comisión del vendedor ($):",
+      btn_calculate: "Calcular",
+      btn_clear: "Limpiar",
+
+      fin_title:
+        "Financieras (ingresa el MONTO financiado para esta operación):",
+      fin_subtitle:
+        "Cada monto usa la tasa de comisión de esa financiera.",
+
+      label_rate: "Porcentaje %",
+      label_amount: "Monto financiado ($)",
+
+      aff_name: "American First Finance",
+      acima_name: "Acima",
+      dignify_name: "Dignify",
+      synchrony_name: "Synchrony",
+      afterpay_name: "Afterpay",
+      usbank_name: "US Bank",
+      snap_name: "Snap Finance",
+      progressive_name: "Progressive",
+      zip_name: "Zip",
+      klarna_name: "Klarna",
+
+      results_title: "Resultados",
+    },
+  };
+
+  function applyLanguage(lang) {
+    const dict = i18n[lang] || i18n.en;
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (dict[key]) {
+        el.textContent = dict[key];
+      }
+    });
+  }
+
+  // --- Theme toggle ---
+
+  function applyTheme(theme) {
+    const isLight = theme === "light";
+    const mainCard = document.getElementById("main-card");
+    const finCard = document.getElementById("fin-card");
+    const resultsCard = document.getElementById("results-card");
+    const clearBtn = document.getElementById("btn-clear");
+
+    [mainCard, finCard].forEach((card) => {
+      if (!card) return;
+      if (isLight) {
+        card.classList.add("card-light");
+      } else {
+        card.classList.remove("card-light");
+      }
+    });
+
+    // Results card is always light-styled by default
+    if (isLight) {
+      clearBtn.classList.add("card-light");
+    } else {
+      clearBtn.classList.remove("card-light");
+    }
+  }
+
+  // --- Helper to read number safely ---
+
+  function numVal(id) {
+    const el = document.getElementById(id);
+    if (!el) return 0;
+    const v = parseFloat(el.value);
+    return isNaN(v) ? 0 : v;
+  }
+
+  // --- Collect form data and call backend ---
+
+  async function calculate() {
+    const total_price = numVal("total_price");
+    const include_shipping = document.getElementById("include_shipping").checked;
+    const tax_rate = numVal("tax_rate");
+    const manual_bank_fee_pct = numVal("manual_bank_fee");
+    const bike_cost = numVal("bike_cost");
+    const seller_commission = numVal("seller_commission");
+
+    // Financing companies data
+    const financing = {
+      aff: {
+        label: document.querySelector("[data-i18n='aff_name']").textContent,
+        rate: numVal("aff_rate"),
+        amount: numVal("aff_amount"),
+      },
+      acima: {
+        label: document.querySelector("[data-i18n='acima_name']").textContent,
+        rate: numVal("acima_rate"),
+        amount: numVal("acima_amount"),
+      },
+      dignify: {
+        label: document.querySelector("[data-i18n='dignify_name']").textContent,
+        rate: numVal("dignify_rate"),
+        amount: numVal("dignify_amount"),
+      },
+      synchrony: {
+        label: document.querySelector("[data-i18n='synchrony_name']").textContent,
+        rate: numVal("synchrony_rate"),
+        amount: numVal("synchrony_amount"),
+      },
+      afterpay: {
+        label: document.querySelector("[data-i18n='afterpay_name']").textContent,
+        rate: numVal("afterpay_rate"),
+        amount: numVal("afterpay_amount"),
+      },
+      usbank: {
+        label: document.querySelector("[data-i18n='usbank_name']").textContent,
+        rate: numVal("usbank_rate"),
+        amount: numVal("usbank_amount"),
+      },
+      snap: {
+        label: document.querySelector("[data-i18n='snap_name']").textContent,
+        rate: numVal("snap_rate"),
+        amount: numVal("snap_amount"),
+      },
+      progressive: {
+        label: document.querySelector("[data-i18n='progressive_name']").textContent,
+        rate: numVal("progressive_rate"),
+        amount: numVal("progressive_amount"),
+      },
+      zip: {
+        label: document.querySelector("[data-i18n='zip_name']").textContent,
+        rate: numVal("zip_rate"),
+        amount: numVal("zip_amount"),
+      },
+      klarna: {
+        label: document.querySelector("[data-i18n='klarna_name']").textContent,
+        rate: numVal("klarna_rate"),
+        amount: numVal("klarna_amount"),
+      },
+    };
+
+    const payload = {
+      total_price,
+      include_shipping,
+      tax_rate,
+      manual_bank_fee_pct,
+      bike_cost,
+      seller_commission,
+      financing,
+    };
+
+    try {
+      const res = await fetch("/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.error || "Error");
+        return;
+      }
+
+      renderResults(data.results);
+    } catch (err) {
+      console.error(err);
+      alert("Network error");
+    }
+  }
+
+  function formatUSD(value) {
+    return (
+      "$" +
+      Number(value || 0)
+        .toFixed(2)
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    );
+  }
+
+  function renderResults(r) {
+    const list = document.getElementById("results-list");
+    list.innerHTML = "";
+
+    const add = (label, val) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${label}</strong> ${val}`;
+      list.appendChild(li);
+    };
+
+    const lang = document.getElementById("language").value;
+    const isEs = lang === "es";
+
+    add(
+      isEs ? "Precio de la moto antes de impuestos:" : "Bike price before tax:",
+      formatUSD(r.bike_price_before_tax)
+    );
+    add(isEs ? "Monto de impuesto:" : "Tax amount:", formatUSD(r.tax_amount));
+    add(
+      isEs
+        ? "Subtotal con impuesto (sin envío):"
+        : "Subtotal with tax (bike only, no shipping):",
+      formatUSD(r.subtotal_with_tax)
+    );
+    add(
+      isEs ? "Envío (no ingreso):" : "Shipping (not revenue):",
+      formatUSD(r.shipping_amount)
+    );
+
+    add(
+      isEs ? "Comisión manual de banco:" : "Manual bank fee amount:",
+      formatUSD(r.manual_bank_fee_amount)
+    );
+
+    // Financing breakdown
+    if (r.financing_breakdown && r.financing_breakdown.length > 0) {
+      const label = isEs
+        ? "Detalle comisiones por financiera:"
+        : "Bank fee breakdown:";
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${label}</strong>`;
+      const inner = document.createElement("ul");
+      inner.style.marginTop = "2px";
+      inner.style.paddingLeft = "16px";
+      r.financing_breakdown.forEach((f) => {
+        const li2 = document.createElement("li");
+        li2.textContent = `${f.name}: ${formatUSD(
+          f.fee
+        )} on ${formatUSD(f.amount_financed)} @ ${f.rate_pct.toFixed(2)}%`;
+        inner.appendChild(li2);
+      });
+      li.appendChild(inner);
+      list.appendChild(li);
+    }
+
+    add(
+      isEs ? "Comisiones bancarias totales:" : "Total bank fees:",
+      formatUSD(r.total_bank_fees)
+    );
+
+    add(
+      isEs
+        ? "Ingreso bruto (solo moto + impuesto):"
+        : "Gross revenue (bike + tax only):",
+      formatUSD(r.revenue_gross)
+    );
+
+    add(
+      isEs
+        ? "Si NO pasas comisiones – Neto a la tienda:"
+        : "If you DO NOT pass fees – Net to store (bike only):",
+      formatUSD(r.net_to_store_no_pass)
+    );
+    add(
+      isEs
+        ? "Si NO pasas comisiones – Ganancia después de costo + comisión:"
+        : "If you DO NOT pass fees – Profit after cost + commission:",
+      formatUSD(r.profit_no_pass)
+    );
+
+    add(
+      isEs
+        ? "Si PASAS comisiones – Precio al cliente (incl. comisiones):"
+        : "If you PASS fees – Customer price (incl. all fees):",
+      formatUSD(r.customer_price_with_fees)
+    );
+    add(
+      isEs
+        ? "Si PASAS comisiones – Neto a la tienda:"
+        : "If you PASS fees – Net to store (bike only):",
+      formatUSD(r.net_to_store_with_pass)
+    );
+    add(
+      isEs
+        ? "Si PASAS comisiones – Ganancia después de costo + comisión:"
+        : "If you PASS fees – Profit after cost + commission:",
+      formatUSD(r.profit_with_pass)
+    );
+  }
+
+  // --- Clear form ---
+
+  function clearForm() {
+    [
+      "total_price",
+      "tax_rate",
+      "manual_bank_fee",
+      "bike_cost",
+      "seller_commission",
+      "aff_amount",
+      "acima_amount",
+      "dignify_amount",
+      "synchrony_amount",
+      "afterpay_amount",
+      "usbank_amount",
+      "snap_amount",
+      "progressive_amount",
+      "zip_amount",
+      "klarna_amount",
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    // keep default rates as they are; reset check
+    document.getElementById("include_shipping").checked = true;
+
+    document.getElementById("results-list").innerHTML = "";
+  }
+
+  // --- Wire events ---
+
+  document.getElementById("btn-calc").addEventListener("click", (e) => {
+    e.preventDefault();
+    calculate();
+  });
+
+  document.getElementById("btn-clear").addEventListener("click", (e) => {
+    e.preventDefault();
+    clearForm();
+  });
+
+  document.getElementById("language").addEventListener("change", (e) => {
+    applyLanguage(e.target.value);
+    // Also re-render results in new language if already present
+    const current = document.getElementById("results-list").children.length;
+    if (current > 0) {
+      // Recalculate to translate labels
+      calculate();
+    }
+  });
+
+  document.getElementById("theme").addEventListener("change", (e) => {
+    applyTheme(e.target.value);
+  });
+
+  // Initial setup
+  applyLanguage("en");
+  applyTheme("dark");
+</script>
 </body>
 </html>
