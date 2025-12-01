@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="{{ 'en' if inputs.lang == 'en' else 'es' }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ tx.title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: #111;
+            color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #ff5252;
+            margin-top: 0.5rem;
+        }
+        .card {
+            background-color: #1b1b1b;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #111;
+            color: #f5f5f5;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        input[type="checkbox"] {
+            transform: scale(1.1);
+            margin-right: 6px;
+        }
+        .row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .col-6 {
+            flex: 1 1 260px;
+        }
+        .col-4 {
+            flex: 1 1 200px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        button {
+            border-radius: 999px;
+            border: none;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .btn-primary {
+            background-color: #c62828;
+            color: #fff;
+        }
+        .btn-secondary {
+            background-color: #333;
+            color: #eee;
+        }
+        .error {
+            color: #ff8080;
+            margin-bottom: 10px;
+        }
+        .bank-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 90px;
+            gap: 8px 12px;
+        }
+        .bank-grid-header {
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+        .result-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+        .result-label {
+            opacity: 0.85;
+        }
+        .result-value {
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            background-color: #333;
+            color: #ddd;
+        }
+        .lang-select {
+            margin-bottom: 10px;
+        }
+        @media (max-width: 700px) {
+            .bank-grid {
+                grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+                grid-auto-rows: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <h1>{{ tx.title }}</h1>
+
+    <form method="post">
+        <div class="card">
+            <div class="row">
+                <div class="col-6">
+                    <label for="lang">{{ tx.language }}</label>
+                    <select name="lang" id="lang" class="lang-select" onchange="this.form.submit()">
+                        <option value="en" {% if inputs.lang == 'en' %}selected{% endif %}>{{ tx.lang_en }}</option>
+                        <option value="es" {% if inputs.lang == 'es' %}selected{% endif %}>{{ tx.lang_es }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            {% if error %}
+                <div class="error">{{ error }}</div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-6">
+                    <label for="total_price">{{ tx.total_price }}</label>
+                    <input type="number" step="0.01" name="total_price" id="total_price"
+                           value="{{ inputs.total_price }}">
+                </div>
+                <div class="col-6" style="display:flex;align-items:flex-end;">
+                    <label style="display:flex;align-items:center;gap:6px;">
+                        <input type="checkbox" name="include_shipping"
+                               {% if inputs.include_shipping == 'on' %}checked{% endif %}>
+                        {{ tx.include_shipping }}
+                    </label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-4">
+                    <label for="tax_rate">{{ tx.tax_rate }}</label>
+                    <input type="number" step="0.01" name="tax_rate" id="tax_rate"
+                           value="{{ inputs.tax_rate }}">
+                </div>
+                <div class="col-4">
+                    <label for="bike_cost">{{ tx.bike_cost }}</label>
+                    <input type="number" step="0.01" name="bike_cost" id="bike_cost"
+                           value="{{ inputs.bike_cost }}">
+                </div>
+                <div class="col-4">
+                    <label for="seller_commission">{{ tx.seller_commission }}</label>
+                    <input type="number" step="0.01" name="seller_commission" id="seller_commission"
+                           value="{{ inputs.seller_commission }}">
+                </div>
+            </div>
+
+            <label for="manual_bank_fee">{{ tx.manual_bank_fee }}</label>
+            <input type="text" name="manual_bank_fee" id="manual_bank_fee"
+                   placeholder="{{ tx.manual_example }}"
+                   value="{{ inputs.manual_bank_fee }}">
+
+            <div class="btn-row">
+                <button type="submit" class="btn-primary">{{ tx.calculate }}</button>
+                <button type="submit" class="btn-secondary"
+                        onclick="document.querySelectorAll('input[type=text],input[type=number]').forEach(e=>e.value=''); return false;">
+                    {{ tx.clear }}
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>{{ tx.financing_title }}</h2>
+            <p style="font-size:0.85rem;opacity:.85;margin-top:4px;">{{ tx.financing_note }}</p>
+            <div class="bank-grid bank-grid-header">
+                <div>Company</div>
+                <div>Amount financed ($)</div>
+                <div>Rate %</div>
+            </div>
+            <div class="bank-grid">
+                {% for bank in banks %}
+                    <div>
+                        <label>{{ bank.name }}</label>
+                    </div>
+                    <div>
+                        <input type="number" step="0.01"
+                               name="{{ bank.key }}_amount"
+                               value="{{ inputs.banks[bank.key].amount }}">
+                    </div>
+                    <div>
+                        {% if bank.dropdown %}
+                            <select name="{{ bank.key }}_rate">
+                                {% for opt in bank.options %}
+                                    <option value="{{ opt }}"
+                                        {% if inputs.banks[bank.key].rate|float == opt %}selected{% endif %}>
+                                        {{ "%.2f"|format(opt) }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <span class="badge">{{ "%.2f"|format(bank.default_rate) }}%</span>
+                            <input type="hidden" name="{{ bank.key }}_rate"
+                                   value="{{ bank.default_rate }}">
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if results %}
+            <div class="card">
+                <h2>{{ tx.results_title }}</h2>
+
+                <div class="result-line">
+                    <span class="result-label">{{ tx.bike_before_tax }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.bike_before_tax) }}</span>
+                </div>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.tax_amount }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.tax_amount) }}</span>
+                </div>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.subtotal_bike_tax }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.taxable_total) }}</span>
+                </div>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.shipping }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.shipping) }}</span>
+                </div>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.cash_total }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.cash_total) }}</span>
+                </div>
+
+                <hr style="border-color:#333;margin:10px 0;">
+
+                <div class="result-line">
+                    <span class="result-label">{{ tx.bank_breakdown }}</span>
+                    <span class="result-value" style="text-align:right;max-width:60%;font-size:0.85rem;">
+                        {% if bank_breakdown %}
+                            {% for line in bank_breakdown %}
+                                {{ line }}{% if not loop.last %}<br>{% endif %}
+                            {% endfor %}
+                        {% else %}
+                            $0.00
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="result-line">
+                    <span class="result-label">{{ tx.total_bank_fees }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.total_bank_fees) }}</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>{{ tx.no_pass_title }}</h3>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.no_pass_fees }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.total_bank_fees) }}</span>
+                </div>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.no_pass_net }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.net_no_pass) }}</span>
+                </div>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.no_pass_profit }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.profit_no_pass) }}</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>{{ tx.pass_title }}</h3>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.pass_customer_price }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.customer_price_pass) }}</span>
+                </div>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.pass_net }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.net_pass) }}</span>
+                </div>
+                <div class="result-line">
+                    <span class="result-label">{{ tx.pass_profit }}</span>
+                    <span class="result-value">${{ "%.2f"|format(results.profit_pass) }}</span>
+                </div>
+            </div>
+        {% endif %}
+    </form>
+</div>
+</body>
+</html>
