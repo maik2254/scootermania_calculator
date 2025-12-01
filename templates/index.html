@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>ScooterMania Calculator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #111;
+            color: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background: #1c1c1c;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        h1 span.logo {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: #c62828;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem 1.5rem;
+        }
+        label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #111;
+            color: #f5f5f5;
+        }
+        input::placeholder {
+            color: #777;
+        }
+        .actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+        button {
+            border: none;
+            border-radius: 999px;
+            padding: 0.55rem 1.2rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #c62828;
+            color: #fff;
+        }
+        .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+        .results {
+            margin-top: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem 1.5rem;
+        }
+        .result-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        .result-value {
+            font-weight: 600;
+            text-align: right;
+        }
+        .section-title {
+            margin-top: 1.5rem;
+            font-size: 1rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.25rem;
+        }
+        .error {
+            margin-top: 0.8rem;
+            color: #ff5252;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 700px) {
+            .grid,
+            .results {
+                grid-template-columns: 1fr;
+            }
+            .result-value {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1><span class="logo"></span> ScooterMania Financing Calculator (Web)</h1>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="post">
+            <div class="grid">
+                <div>
+                    <label>Bike price (no tax):</label>
+                    <input type="number" step="0.01" name="base_price"
+                           value="{{ result.base_price if result else '' }}" required />
+                </div>
+                <div>
+                    <label>Tax rate % (FL):</label>
+                    <input type="number" step="0.01" name="tax_rate"
+                           value="{{ result.tax_rate if result else '7.0' }}" />
+                </div>
+                <div>
+                    <label>Bank fee % (one or multiple, e.g. 4.5 or 4.5, 3):</label>
+                    <input type="text" name="bank_fees"
+                           value="{{ result.bank_fees_text if result else '' }}"
+                           placeholder="4.5 or 4.5, 3" />
+                </div>
+                <div>
+                    <label>Bike cost to you:</label>
+                    <input type="number" step="0.01" name="cost_price"
+                           value="{{ result.cost_price if result else '' }}"
+                           placeholder="Your cost" />
+                </div>
+                <div>
+                    <label>Seller commission ($):</label>
+                    <input type="number" step="0.01" name="seller_commission"
+                           value="{{ result.seller_commission if result else '' }}"
+                           placeholder="Commission to seller" />
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn-primary" type="submit">Calculate</button>
+                <button class="btn-secondary" type="reset">Clear</button>
+            </div>
+        </form>
+
+        {% if result %}
+            <div class="section-title">Core totals</div>
+            <div class="results">
+                <div class="result-label">Tax amount:</div>
+                <div class="result-value">${{ '%.2f'|format(result.tax_amount) }}</div>
+
+                <div class="result-label">Subtotal with tax (no bank fee):</div>
+                <div class="result-value">${{ '%.2f'|format(result.subtotal_with_tax) }}</div>
+
+                <div class="result-label">Bank fee breakdown:</div>
+                <div class="result-value">
+                    {% if result.fee_parts %}
+                        {{ result.fee_parts | map('float') | list | join('% + ') }}% = {{ '%.2f'|format(result.total_bank_fee_pct) }}%
+                    {% else %}
+                        0.00%
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="section-title">If you DO NOT pass bank fees to the customer</div>
+            <div class="results">
+                <div class="result-label">Bank fees:</div>
+                <div class="result-value">${{ '%.2f'|format(result.bank_fee_amount_not_passed) }}</div>
+
+                <div class="result-label">Net to store:</div>
+                <div class="result-value">${{ '%.2f'|format(result.net_not_passed) }}</div>
+
+                <div class="result-label">Profit after commission:</div>
+                <div class="result-value">${{ '%.2f'|format(result.profit_not_passed) }}</div>
+            </div>
+
+            <div class="section-title">If you PASS bank fees to the customer</div>
+            <div class="results">
+                <div class="result-label">Customer price:</div>
+                <div class="result-value">
+                    {% if result.customer_price_passed %}
+                        ${{ '%.2f'|format(result.customer_price_passed) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+
+                <div class="result-label">Net to store:</div>
+                <div class="result-value">
+                    {% if result.net_passed %}
+                        ${{ '%.2f'|format(result.net_passed) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+
+                <div class="result-label">Profit after commission:</div>
+                <div class="result-value">
+                    {% if result.profit_passed %}
+                        ${{ '%.2f'|format(result.profit_passed) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>
