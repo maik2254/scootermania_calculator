@@ -1,206 +1,109 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# Constants
-FIXED_SHIPPING = 900.0
 
-
-def to_float(val):
-    """Convert a form value to float safely."""
-    if val is None:
-        return 0.0
-    if isinstance(val, (int, float)):
-        return float(val)
-    s = str(val).replace(",", "").strip()
-    if not s:
-        return 0.0
-    try:
-        return float(s)
-    except ValueError:
-        return 0.0
-
-
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def index():
-    # Defaults
-    language = "en"
-    theme = "dark"
-    include_shipping = True
+    return render_template("index.html")
 
-    # Form values buffer so we can re-render with what user typed
-    form_values = {
-        "total_price": "",
-        "tax_rate": "7.0",
-        "manual_bank_fee_pct": "",
-        "bike_cost": "",
-        "seller_commission": "",
-        "aff_amount": "",
-        "aff_rate": "5.0",
-        "acima_amount": "",
-        "acima_rate": "0.0",
-        "dignify_amount": "",
-        "dignify_rate": "6.5",
-        "synchrony_amount": "",
-        "synchrony_rate": "5.0",
-        "afterpay_amount": "",
-        "afterpay_rate": "6.0",
-        "usbank_amount": "",
-        "usbank_rate": "5.0",
-        "snap_amount": "",
-        "snap_rate": "2.0",
-        "progressive_amount": "",
-        "progressive_rate": "2.0",
-        "zip_amount": "",
-        "zip_rate": "6.0",
-        "klarna_amount": "",
-        "klarna_rate": "6.0",
-    }
 
-    result = None
+@app.post("/calculate")
+def calculate():
+    """
+    Receives JSON with all inputs and returns a JSON with all calculated values.
+    """
+    data = request.get_json() or {}
 
-    if request.method == "POST":
-        action = request.form.get("action", "calculate")
-        language = request.form.get("language", "en")
-        theme = request.form.get("theme", "dark")
+    try:
+        total_price = float(data.get("total_price") or 0.0)
+        include_shipping = bool(data.get("include_shipping"))
+        tax_rate = float(data.get("tax_rate") or 0.0)
+        manual_bank_fee_pct = float(data.get("manual_bank_fee_pct") or 0.0)
+        bike_cost = float(data.get("bike_cost") or 0.0)
+        seller_commission = float(data.get("seller_commission") or 0.0)
 
-        include_shipping = request.form.get("include_shipping") == "on"
+        # Fixed shipping logic (not taxed, not revenue)
+        SHIPPING_FIXED = 900.0 if include_shipping else 0.0
 
-        # Update form_values from POST so if there is an error we keep what user typed
-        for key in form_values.keys():
-            form_values[key] = request.form.get(key, form_values[key])
+        # Amount that is actually taxed (bike price + tax, without shipping)
+        taxable_total = max(total_price - SHIPPING_FIXED, 0.0)
 
-        if action == "clear":
-            # Reset to defaults (we already have form_values defaults defined)
-            result = None
+        # Separate tax and bike price before tax
+        if tax_rate != 0:
+            bike_price_before_tax = taxable_total / (1.0 + tax_rate / 100.0)
         else:
-            # ---- CALCULATIONS ----
-            total_price = to_float(form_values["total_price"])
-            tax_rate = to_float(form_values["tax_rate"])
-            manual_bank_fee_pct = to_float(form_values["manual_bank_fee_pct"])
-            bike_cost = to_float(form_values["bike_cost"])
-            seller_commission = to_float(form_values["seller_commission"])
+            bike_price_before_tax = taxable_total
 
-            # Shipping rule
-            shipping_amount = FIXED_SHIPPING if include_shipping else 0.0
+        tax_amount = taxable_total - bike_price_before_tax
 
-            # Tax is applied ONLY on the bike (no shipping)
-            taxable_total = max(total_price - shipping_amount, 0.0)
+        # Manual bank fee that applies on bike+tax (not shipping)
+        manual_bank_fee_amount = taxable_total * (manual_bank_fee_pct / 100.0)
 
-            if tax_rate > 0:
-                bike_price_before_tax = taxable_total / (1.0 + tax_rate / 100.0)
-                tax_amount = taxable_total - bike_price_before_tax
-            else:
-                bike_price_before_tax = taxable_total
-                tax_amount = 0.0
+        # Financing companies (each one has amount financed and a rate %)
+        financing = data.get("financing") or {}
+        financing_breakdown = []
+        financing_fees_total = 0.0
 
-            # Financing companies: each one is AMOUNT financed with that bank,
-            # and a merchant fee RATE % applied to that amount.
-            banks = [
-                ("aff", "American First Finance", "aff_amount", "aff_rate"),
-                ("acima", "Acima", "acima_amount", "acima_rate"),
-                ("dignify", "Dignify", "dignify_amount", "dignify_rate"),
-                ("synchrony", "Synchrony", "synchrony_amount", "synchrony_rate"),
-                ("afterpay", "Afterpay", "afterpay_amount", "afterpay_rate"),
-                ("usbank", "US Bank", "usbank_amount", "usbank_rate"),
-                ("snap", "Snap Finance", "snap_amount", "snap_rate"),
-                ("progressive", "Progressive", "progressive_amount", "progressive_rate"),
-                ("zip", "Zip", "zip_amount", "zip_rate"),
-                ("klarna", "Klarna", "klarna_amount", "klarna_rate"),
-            ]
+        for code, info in financing.items():
+            amount = float(info.get("amount") or 0.0)
+            rate = float(info.get("rate") or 0.0)
+            label = info.get("label", code)
 
-            bank_details = []
-            total_bank_fees_dollars = 0.0
+            # Ignore empty rows
+            if amount <= 0 or rate <= 0:
+                continue
 
-            for code, label, amount_key, rate_key in banks:
-                amount = to_float(form_values[amount_key])
-                rate = to_float(form_values[rate_key])
+            fee = amount * (rate / 100.0)
+            financing_fees_total += fee
 
-                if amount > 0 and rate > 0:
-                    fee = amount * rate / 100.0
-                    bank_details.append(
-                        {
-                            "label": label,
-                            "amount": amount,
-                            "rate": rate,
-                            "fee": fee,
-                        }
-                    )
-                    total_bank_fees_dollars += fee
-
-            # Manual bank fee % applies on bike+tax (taxable_total)
-            manual_fee_amount = taxable_total * manual_bank_fee_pct / 100.0
-            if manual_fee_amount > 0:
-                bank_details.append(
-                    {
-                        "label": "Manual bank fee",
-                        "amount": taxable_total,
-                        "rate": manual_bank_fee_pct,
-                        "fee": manual_fee_amount,
-                    }
-                )
-            total_bank_fees_dollars += manual_fee_amount
-
-            if taxable_total > 0:
-                total_bank_fee_pct_vs_bike = (
-                    total_bank_fees_dollars / taxable_total * 100.0
-                )
-            else:
-                total_bank_fee_pct_vs_bike = 0.0
-
-            # Case 1: You DO NOT pass any fees to customer
-            net_to_store_no_pass_bike_only = taxable_total - total_bank_fees_dollars
-            profit_no_pass = (
-                net_to_store_no_pass_bike_only - bike_cost - seller_commission
+            financing_breakdown.append(
+                {
+                    "code": code,
+                    "name": label,
+                    "amount_financed": round(amount, 2),
+                    "rate_pct": round(rate, 2),
+                    "fee": round(fee, 2),
+                }
             )
 
-            # Case 2: You PASS all fees to customer.
-            # We simply add bank fees on top of the original customer price.
-            customer_price_pass = total_price + total_bank_fees_dollars
-            net_to_store_pass_bike_only = taxable_total  # you get full bike+tax
-            profit_pass = net_to_store_pass_bike_only - bike_cost - seller_commission
+        total_bank_fees = manual_bank_fee_amount + financing_fees_total
 
-            # Build a human-readable breakdown string for banks
-            breakdown_parts = []
-            for bd in bank_details:
-                breakdown_parts.append(
-                    f"{bd['label']} ${bd['amount']:,.2f} @ {bd['rate']:.2f}% = ${bd['fee']:,.2f}"
-                )
-            bank_breakdown_str = " + ".join(breakdown_parts) if breakdown_parts else "-"
+        # Revenue here is ONLY bike + tax (shipping is pass-through, not revenue)
+        revenue_gross = taxable_total
 
-            result = {
-                "bike_price_before_tax": bike_price_before_tax,
-                "tax_amount": tax_amount,
-                "subtotal_with_tax_bike_only": taxable_total,
-                "shipping_amount": shipping_amount,
-                "total_to_customer": taxable_total + shipping_amount,
-                "total_bank_fees_dollars": total_bank_fees_dollars,
-                "total_bank_fee_pct_vs_bike": total_bank_fee_pct_vs_bike,
-                "net_to_store_no_pass_bike_only": net_to_store_no_pass_bike_only,
-                "profit_no_pass": profit_no_pass,
-                "customer_price_pass": customer_price_pass,
-                "net_to_store_pass_bike_only": net_to_store_pass_bike_only,
-                "profit_pass": profit_pass,
-                "bank_breakdown_str": bank_breakdown_str,
-            }
+        # Scenario 1: Store eats the bank fees (no pass)
+        net_no_pass = revenue_gross - total_bank_fees
+        profit_no_pass = net_no_pass - bike_cost - seller_commission
 
-    else:
-        # GET: defaults
-        language = "en"
-        theme = "dark"
-        include_shipping = True
-        result = None
+        # Scenario 2: Store passes all bank fees to the customer on top of price
+        customer_price_with_fees = total_price + total_bank_fees
+        net_with_pass = revenue_gross  # store keeps same revenue, customer pays fees
+        profit_with_pass = net_with_pass - bike_cost - seller_commission
 
-    return render_template(
-        "index.html",
-        language=language,
-        theme=theme,
-        include_shipping=include_shipping,
-        form=form_values,
-        result=result,
-        fixed_shipping=FIXED_SHIPPING,
-    )
+        results = {
+            "bike_price_before_tax": round(bike_price_before_tax, 2),
+            "tax_amount": round(tax_amount, 2),
+            "subtotal_with_tax": round(taxable_total, 2),
+            "shipping_amount": round(SHIPPING_FIXED, 2),
+            "manual_bank_fee_amount": round(manual_bank_fee_amount, 2),
+            "total_bank_fees": round(total_bank_fees, 2),
+            "financing_breakdown": financing_breakdown,
+            "revenue_gross": round(revenue_gross, 2),
+            "net_to_store_no_pass": round(net_no_pass, 2),
+            "profit_no_pass": round(profit_no_pass, 2),
+            "customer_price_with_fees": round(customer_price_with_fees, 2),
+            "net_to_store_with_pass": round(net_with_pass, 2),
+            "profit_with_pass": round(profit_with_pass, 2),
+        }
+
+        return jsonify(success=True, results=results)
+
+    except Exception as e:
+        # If something goes wrong, return an error with message
+        return jsonify(success=False, error=str(e)), 400
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # For local testing
+    app.run(debug=True, host="0.0.0.0", port=5000)
