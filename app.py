@@ -43,7 +43,7 @@ def index():
     form_values = {
         "total_price": "",
         "include_shipping": True,
-        "tax_rate": TAX_RATE_PERCENT,  # Always 7, shown but not editable
+        "tax_rate": TAX_RATE_PERCENT,  # always 7, shown but not editable
         "bike_cost": "",
         "seller_commission": "",
         "theme": theme,
@@ -64,15 +64,16 @@ def index():
         # --- Read main inputs ---
         total_price = parse_float(request.form.get("total_price"))
         include_shipping = request.form.get("include_shipping") == "on"
-        # tax_rate is fixed constant:
-        tax_rate_percent = TAX_RATE_PERCENT
+        tax_rate_percent = TAX_RATE_PERCENT  # fixed
         bike_cost = parse_float(request.form.get("bike_cost"))
         seller_commission = parse_float(request.form.get("seller_commission"))
 
         form_values["total_price"] = total_price if total_price else ""
         form_values["include_shipping"] = include_shipping
         form_values["bike_cost"] = bike_cost if bike_cost else ""
-        form_values["seller_commission"] = seller_commission if seller_commission else ""
+        form_values["seller_commission"] = (
+            seller_commission if seller_commission else ""
+        )
 
         # --- Bank inputs ---
         bank_results = []
@@ -124,6 +125,8 @@ def index():
 
         # Case A: merchant DOES NOT pass bank fees to customer
         net_to_store_no_bank_pass = gross_income_no_shipping - total_bank_fees
+
+        # PROFIT = net to store - bike cost - seller commission
         profit_no_bank_pass = (
             net_to_store_no_bank_pass - bike_cost - seller_commission
         )
@@ -131,6 +134,8 @@ def index():
         # Case B: merchant PASSES bank fees to customer (customer pays them on top)
         customer_price_with_fees = total_price + total_bank_fees
         net_to_store_with_bank_pass = gross_income_no_shipping
+
+        # PROFIT when customer pays fees: same net, minus costs & commission
         profit_with_bank_pass = (
             net_to_store_with_bank_pass - bike_cost - seller_commission
         )
