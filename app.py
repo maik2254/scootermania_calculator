@@ -2,307 +2,201 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
-# Fixed tax & shipping rules
-TAX_RATE = 7.0
-SHIPPING_FIXED = 900.0
+# --- CONSTANTS ---
+TAX_RATE_PERCENT = 7.0
+FIXED_SHIPPING_AMOUNT = 900.0
 
-# Text in both languages
-LANG = {
-    "en": {
-        "title": "ScooterMania – Financing Price Calculator (Web)",
-        "language_label": "Language",
-        "theme_label": "Theme",
-        "total_price_label": "Total price to customer (incl. shipping):",
-        "shipping_toggle": "Include fixed shipping $900 (not taxed, not revenue)",
-        "tax_rate_label": "Tax rate % (FL):",
-        "bike_cost_label": "Bike cost to you ($):",
-        "seller_commission_label": "Seller commission ($):",
-        "financing_section_title": "Financing companies (enter AMOUNT financed for this deal):",
-        "financing_section_hint": "Each amount uses that company's merchant fee rate.",
-        "results_title": "Results",
-        "bike_before_tax": "Bike price before tax:",
-        "tax_amount": "Tax amount:",
-        "subtotal_with_tax": "Subtotal with tax (bike only):",
-        "shipping_not_revenue": "Shipping (not revenue):",
-        "total_customer_price": "Cash total to customer (bike + tax + shipping):",
-        "bank_fees_total": "Bank fees (if you do NOT pass fees):",
-        "bank_fee_breakdown": "Bank fee breakdown (total %):",
-        "gross_income_bike_tax": "Gross income (bike + tax only):",
-        "no_pass_net_store": "If you DO NOT pass bank fees – Net to store (bike only):",
-        "no_pass_profit": "If you DO NOT pass bank fees – Profit after cost + commission:",
-        "pass_customer_price": "If you PASS bank fees – Customer price (incl. commissions):",
-        "pass_net_store": "If you PASS bank fees – Net to store (bike only):",
-        "pass_profit": "If you PASS bank fees – Profit after cost + commission:",
-        "calculate": "Calculate",
-        "clear": "Clear",
-    },
-    "es": {
-        "title": "ScooterMania – Calculadora de Precio con Financiamiento (Web)",
-        "language_label": "Idioma",
-        "theme_label": "Tema",
-        "total_price_label": "Precio total al cliente (incl. envío):",
-        "shipping_toggle": "Incluir envío fijo de $900 (no tributado, no ingreso)",
-        "tax_rate_label": "Impuesto % (FL):",
-        "bike_cost_label": "Costo de la moto para ti ($):",
-        "seller_commission_label": "Comisión del vendedor ($):",
-        "financing_section_title": "Financieras (ingresa el MONTO financiado en este negocio):",
-        "financing_section_hint": "Cada monto usa la comisión de comerciante de esa financiera.",
-        "results_title": "Resultados",
-        "bike_before_tax": "Precio de la moto antes de impuestos:",
-        "tax_amount": "Monto de impuesto:",
-        "subtotal_with_tax": "Subtotal con impuesto (solo moto):",
-        "shipping_not_revenue": "Envío (no ingreso):",
-        "total_customer_price": "Total al cliente en efectivo (moto + impuesto + envío):",
-        "bank_fees_total": "Comisiones bancarias (si NO PASAS comisión del banco):",
-        "bank_fee_breakdown": "Comisiones bancarias totales:",
-        "gross_income_bike_tax": "Ingreso bruto (solo moto + impuesto):",
-        "no_pass_net_store": "Si NO PASAS comisión del banco – Neto a la tienda (solo moto):",
-        "no_pass_profit": "Si NO PASAS comisión del banco – Ganancia después de costo + comisión:",
-        "pass_customer_price": "Si PASAS comisión del banco – Precio al cliente (incl. comisiones):",
-        "pass_net_store": "Si PASAS comisión del banco – Neto a la tienda (solo moto):",
-        "pass_profit": "Si PASAS comisión del banco – Ganancia después de costo + comisión:",
-        "calculate": "Calcular",
-        "clear": "Limpiar",
-    },
+# Bank definitions: key -> (name_en, name_es, list_of_possible_rates)
+BANKS = {
+    "aff": ("American First Finance", "American First Finance", [5.0]),
+    "acima": ("Acima", "Acima", [0.0, 3.0]),
+    "dignify": ("Dignify", "Dignify", [6.5, 9.0]),
+    "synchrony": ("Synchrony", "Synchrony", [5.0, 9.0, 13.5]),
+    "afterpay": ("Afterpay", "Afterpay", [6.0]),
+    "usbank": ("US Bank", "US Bank", [5.0, 8.0, 10.0, 12.0, 14.0, 16.0]),
+    "snap": ("Snap Finance", "Snap Finance", [2.0]),
+    "progressive": ("Progressive", "Progressive", [2.0]),
+    "zip": ("Zip", "Zip", [6.0]),
+    "klarna": ("Klarna", "Klarna", [6.0]),
 }
 
-# Bank config: default rates + allowed options for dropdowns
-BANKS = [
-    {
-        "key": "aff",
-        "name_en": "American First Finance",
-        "name_es": "American First Finance",
-        "rate_default": 5.0,
-        "rate_choices": None,          # free text
-    },
-    {
-        "key": "acima",
-        "name_en": "Acima",
-        "name_es": "Acima",
-        "rate_default": 0.0,
-        "rate_choices": [0.0, 3.0],    # 0% or 3%
-    },
-    {
-        "key": "dignify",
-        "name_en": "Dignify",
-        "name_es": "Dignify",
-        "rate_default": 6.5,
-        "rate_choices": [6.5, 9.0],    # 6.5% or 9%
-    },
-    {
-        "key": "synchrony",
-        "name_en": "Synchrony",
-        "name_es": "Synchrony",
-        "rate_default": 5.0,
-        "rate_choices": [5.0, 9.0, 13.5],  # dropdown
-    },
-    {
-        "key": "afterpay",
-        "name_en": "Afterpay",
-        "name_es": "Afterpay",
-        "rate_default": 6.0,
-        "rate_choices": None,
-    },
-    {
-        "key": "us_bank",
-        "name_en": "US Bank",
-        "name_es": "US Bank",
-        "rate_default": 5.0,
-        "rate_choices": [5.0, 8.0, 10.0, 12.0, 14.0, 16.0],
-    },
-    {
-        "key": "snap",
-        "name_en": "Snap Finance",
-        "name_es": "Snap Finance",
-        "rate_default": 2.0,
-        "rate_choices": None,
-    },
-    {
-        "key": "progressive",
-        "name_en": "Progressive",
-        "name_es": "Progressive",
-        "rate_default": 2.0,
-        "rate_choices": None,
-    },
-    {
-        "key": "zip",
-        "name_en": "Zip",
-        "name_es": "Zip",
-        "rate_default": 6.0,
-        "rate_choices": None,
-    },
-    {
-        "key": "klarna",
-        "name_en": "Klarna",
-        "name_es": "Klarna",
-        "rate_default": 6.0,
-        "rate_choices": None,
-    },
-]
 
-
-def fmt_money(value):
-    """Format numbers as $X,XXX.XX or N/A."""
-    if value is None:
-        return "N/A"
-    return f"${value:,.2f}"
+def parse_float(value, default=0.0):
+    try:
+        return float(str(value).replace(",", "").strip())
+    except (TypeError, ValueError):
+        return default
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    # language & theme
-    lang = request.form.get("language", "en")
-    if lang not in LANG:
+    # Language & theme handling
+    lang = request.values.get("language", "en")
+    if lang not in ("en", "es"):
         lang = "en"
-    strings = LANG[lang]
 
-    theme = request.form.get("theme", "dark")
+    theme = request.values.get("theme", "dark")
     if theme not in ("dark", "light"):
         theme = "dark"
 
-    results = None
-
-    # default form values
-    form_data = {
+    # --- Defaults for form fields ---
+    form_values = {
         "total_price": "",
         "include_shipping": True,
+        "tax_rate": TAX_RATE_PERCENT,  # Always 7, shown but not editable
         "bike_cost": "",
         "seller_commission": "",
+        "theme": theme,
+        "language": lang,
     }
 
-    # financing form values
-    bank_form = {f"{b['key']}_amount": "" for b in BANKS}
-    bank_rate_values = {f"{b['key']}_rate": str(b["rate_default"]) for b in BANKS}
+    # Bank form values (amount + selected rate)
+    bank_form = {}
+    for key, (name_en, name_es, rates) in BANKS.items():
+        bank_form[key] = {
+            "amount": "",
+            "rate": rates[0],  # default dropdown selection
+        }
+
+    results = None
 
     if request.method == "POST":
-        action = request.form.get("action", "calculate")
+        # --- Read main inputs ---
+        total_price = parse_float(request.form.get("total_price"))
+        include_shipping = request.form.get("include_shipping") == "on"
+        # tax_rate is fixed constant:
+        tax_rate_percent = TAX_RATE_PERCENT
+        bike_cost = parse_float(request.form.get("bike_cost"))
+        seller_commission = parse_float(request.form.get("seller_commission"))
 
-        if action == "clear":
-            # Just reset to defaults (no calculation)
-            pass
-        else:
-            # ---- read inputs ----
-            total_price = float(request.form.get("total_price", "0") or 0)
-            include_shipping = request.form.get("include_shipping") == "on"
-            bike_cost = float(request.form.get("bike_cost", "0") or 0)
-            seller_commission = float(request.form.get("seller_commission", "0") or 0)
+        form_values["total_price"] = total_price if total_price else ""
+        form_values["include_shipping"] = include_shipping
+        form_values["bike_cost"] = bike_cost if bike_cost else ""
+        form_values["seller_commission"] = seller_commission if seller_commission else ""
 
-            form_data["total_price"] = total_price if total_price != 0 else ""
-            form_data["include_shipping"] = include_shipping
-            form_data["bike_cost"] = bike_cost if bike_cost != 0 else ""
-            form_data["seller_commission"] = (
-                seller_commission if seller_commission != 0 else ""
+        # --- Bank inputs ---
+        bank_results = []
+        total_bank_fees = 0.0
+
+        for key, (name_en, name_es, rates) in BANKS.items():
+            amount_field = f"{key}_amount"
+            rate_field = f"{key}_rate"
+
+            amount = parse_float(request.form.get(amount_field))
+            rate = parse_float(request.form.get(rate_field), rates[0])
+
+            bank_form[key]["amount"] = amount if amount else ""
+            bank_form[key]["rate"] = rate
+
+            if amount > 0 and rate > 0:
+                fee = amount * (rate / 100.0)
+            else:
+                fee = 0.0
+
+            total_bank_fees += fee
+
+            bank_results.append(
+                {
+                    "key": key,
+                    "name_en": name_en,
+                    "name_es": name_es,
+                    "amount": amount,
+                    "rate": rate,
+                    "fee": fee,
+                }
             )
 
-            # ---- shipping and tax breakdown ----
-            shipping = SHIPPING_FIXED if include_shipping else 0.0
-            bike_plus_tax = max(total_price - shipping, 0.0)
+        # --- Core math ---
+        shipping_amount = FIXED_SHIPPING_AMOUNT if include_shipping else 0.0
 
-            if bike_plus_tax > 0:
-                base_price = bike_plus_tax / (1 + TAX_RATE / 100)
-                tax_amount = bike_plus_tax - base_price
-            else:
-                base_price = 0.0
-                tax_amount = 0.0
+        # Bike+tax is total minus shipping (shipping is NOT taxed and NOT revenue)
+        bike_plus_tax = max(total_price - shipping_amount, 0.0)
 
-            gross_to_customer = bike_plus_tax + shipping
+        tax_rate = tax_rate_percent / 100.0
+        if bike_plus_tax > 0 and tax_rate >= 0:
+            bike_price_before_tax = bike_plus_tax / (1.0 + tax_rate)
+        else:
+            bike_price_before_tax = 0.0
 
-            # ---- bank fees ----
-            total_bank_fee_amount = 0.0
-            total_bank_fee_pct = 0.0
-            breakdown_parts = []
+        tax_amount = bike_plus_tax - bike_price_before_tax
 
-            for bank in BANKS:
-                amount_key = f"{bank['key']}_amount"
-                rate_key = f"{bank['key']}_rate"
+        gross_income_no_shipping = bike_plus_tax  # bike + tax only
 
-                amount_str = request.form.get(amount_key, "").strip()
-                rate_str = request.form.get(rate_key, "").strip()
+        # Case A: merchant DOES NOT pass bank fees to customer
+        net_to_store_no_bank_pass = gross_income_no_shipping - total_bank_fees
+        profit_no_bank_pass = (
+            net_to_store_no_bank_pass - bike_cost - seller_commission
+        )
 
-                # amount financed with that bank
-                try:
-                    amount = float(amount_str) if amount_str else 0.0
-                except ValueError:
-                    amount = 0.0
+        # Case B: merchant PASSES bank fees to customer (customer pays them on top)
+        customer_price_with_fees = total_price + total_bank_fees
+        net_to_store_with_bank_pass = gross_income_no_shipping
+        profit_with_bank_pass = (
+            net_to_store_with_bank_pass - bike_cost - seller_commission
+        )
 
-                # rate (respect dropdown limits if defined)
-                if bank["rate_choices"]:
-                    try:
-                        rate = float(rate_str)
-                    except ValueError:
-                        rate = bank["rate_default"]
-                    if rate not in bank["rate_choices"]:
-                        rate = bank["rate_default"]
-                else:
-                    try:
-                        rate = float(rate_str) if rate_str else bank["rate_default"]
-                    except ValueError:
-                        rate = bank["rate_default"]
+        # Build labels depending on language
+        if lang == "es":
+            labels = {
+                "results_title": "Resultados",
+                "bike_before_tax": "Precio de la moto antes de impuestos:",
+                "tax_amount": "Monto de impuesto:",
+                "subtotal_no_shipping": "Subtotal con impuesto (sin envío):",
+                "shipping": "Envío (no ingreso):",
+                "gross_income": "Ingreso bruto (solo moto + impuesto):",
+                "manual_bank": "Comisión manual de banco:",
+                "total_bank": "Comisiones bancarias totales:",
+                "no_pass_net": "Si NO Pasas Comisión Del Banco – Neto a la tienda:",
+                "no_pass_profit": "Si NO Pasas Comisión Del Banco – Ganancia después de costo + comisión:",
+                "pass_price": "Si PASAS Comisión Del Banco – Precio al cliente (incl. comisiones):",
+                "pass_net": "Si PASAS Comisión Del Banco – Neto a la tienda (solo moto + impuesto):",
+                "pass_profit": "Si PASAS Comisión Del Banco – Ganancia después de costo + comisión:",
+                "bank_breakdown_title": "Detalle de comisiones por banco:",
+            }
+        else:
+            labels = {
+                "results_title": "Results",
+                "bike_before_tax": "Bike price before tax:",
+                "tax_amount": "Tax amount:",
+                "subtotal_no_shipping": "Subtotal with tax (bike only, no shipping):",
+                "shipping": "Shipping (not taxed, not revenue):",
+                "gross_income": "Gross income (bike + tax only):",
+                "manual_bank": "Manual bank fee:",
+                "total_bank": "Total bank fees:",
+                "no_pass_net": "If you DO NOT pass bank fees – Net to store:",
+                "no_pass_profit": "If you DO NOT pass bank fees – Profit after cost + commission:",
+                "pass_price": "If you PASS bank fees – Customer price (incl. fees):",
+                "pass_net": "If you PASS bank fees – Net to store (bike + tax only):",
+                "pass_profit": "If you PASS bank fees – Profit after cost + commission:",
+                "bank_breakdown_title": "Bank fee breakdown by company:",
+            }
 
-                bank_form[amount_key] = amount_str
-                bank_rate_values[rate_key] = str(rate)
-
-                if amount > 0 and rate > 0:
-                    fee_amount = amount * rate / 100.0
-                    total_bank_fee_amount += fee_amount
-                    total_bank_fee_pct += rate
-                    breakdown_parts.append(f"{rate:.2f}%")
-
-            if breakdown_parts:
-                breakdown_text = (
-                    " + ".join(breakdown_parts)
-                    + f" = {total_bank_fee_pct:.2f}%"
-                )
-            else:
-                breakdown_text = "0.00%"
-
-            gross_income_bike_tax = bike_plus_tax
-
-            # ---- Scenario A: you do NOT pass bank fees ----
-            net_store_no_pass = bike_plus_tax - total_bank_fee_amount
-            profit_no_pass = net_store_no_pass - bike_cost - seller_commission
-
-            # ---- Scenario B: you PASS bank fees (customer pays them) ----
-            if 0 < total_bank_fee_pct < 100 and bike_plus_tax > 0:
-                factor = 1 - total_bank_fee_pct / 100.0
-                adjusted_bike_plus_tax = bike_plus_tax / factor
-                customer_price_pass = adjusted_bike_plus_tax + shipping
-                net_store_pass = bike_plus_tax
-                profit_pass = net_store_pass - bike_cost - seller_commission
-            else:
-                customer_price_pass = None
-                net_store_pass = None
-                profit_pass = None
-
-            results = [
-                (strings["bike_before_tax"], fmt_money(base_price)),
-                (strings["tax_amount"], fmt_money(tax_amount)),
-                (strings["subtotal_with_tax"], fmt_money(bike_plus_tax)),
-                (strings["shipping_not_revenue"], fmt_money(shipping)),
-                (strings["total_customer_price"], fmt_money(gross_to_customer)),
-                (strings["bank_fee_breakdown"], breakdown_text),
-                (strings["bank_fees_total"], fmt_money(total_bank_fee_amount)),
-                (strings["gross_income_bike_tax"], fmt_money(gross_income_bike_tax)),
-                (strings["no_pass_net_store"], fmt_money(net_store_no_pass)),
-                (strings["no_pass_profit"], fmt_money(profit_no_pass)),
-                (strings["pass_customer_price"], fmt_money(customer_price_pass)),
-                (strings["pass_net_store"], fmt_money(net_store_pass)),
-                (strings["pass_profit"], fmt_money(profit_pass)),
-            ]
+        results = {
+            "labels": labels,
+            "bike_before_tax": bike_price_before_tax,
+            "tax_amount": tax_amount,
+            "subtotal_no_shipping": bike_plus_tax,
+            "shipping": shipping_amount,
+            "gross_income": gross_income_no_shipping,
+            "total_bank_fees": total_bank_fees,
+            "net_no_pass": net_to_store_no_bank_pass,
+            "profit_no_pass": profit_no_bank_pass,
+            "customer_price_with_fees": customer_price_with_fees,
+            "net_with_pass": net_to_store_with_bank_pass,
+            "profit_with_pass": profit_with_bank_pass,
+            "bank_results": bank_results,
+        }
 
     return render_template(
         "index.html",
-        lang=lang,
-        strings=strings,
-        theme=theme,
-        tax_rate=TAX_RATE,
+        form=form_values,
         banks=BANKS,
-        form_data=form_data,
         bank_form=bank_form,
-        bank_rate_values=bank_rate_values,
         results=results,
+        tax_rate_percent=TAX_RATE_PERCENT,
+        shipping_amount=FIXED_SHIPPING_AMOUNT,
     )
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
