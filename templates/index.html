@@ -1,360 +1,554 @@
-<!DOCTYPE html>
-<html lang="{{ 'en' if lang == 'en' else 'es' }}">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ strings.title }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        :root {
-            --sm-red: #e85a3c;
-            --sm-red-dark: #bf4329;
-            --bg-dark: #111111;
-            --bg-light: #f4f4f4;
-            --card-dark: #1c1c1f;
-            --card-light: #ffffff;
-            --text-light: #ffffff;
-            --text-dark: #1b1b1b;
-        }
+  <meta charset="utf-8">
+  <title>ScooterMania – Financing Price Calculator (Web)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-        }
+  <style>
+    :root {
+      --bg-dark: #050509;
+      --bg-card-dark: #111118;
+      --bg-input-dark: #181823;
+      --text-dark: #f8f8ff;
+      --subtext-dark: #ccccd9;
 
-        body.light {
-            background-color: var(--bg-light);
-            color: var(--text-dark);
-        }
+      --bg-light: #f5f5f9;
+      --bg-card-light: #ffffff;
+      --bg-input-light: #f1f1f7;
+      --text-light: #111111;
+      --subtext-light: #555555;
 
-        .wrapper {
-            max-width: 1150px;
-            margin: 0 auto;
-            padding: 24px 16px 48px;
-        }
+      --accent: #e46847;
+      --accent-soft: #f38e6b;
+      --danger: #ff4d4f;
+      --border-radius: 14px;
+    }
 
-        header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050509;
+      color: #f8f8ff;
+    }
 
-        header img.logo {
-            height: 48px;
-            width: auto;
-        }
+    .light body {} /* placeholder so you can theme if you want with JS later */
 
-        header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
-            color: var(--sm-red);
-        }
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      box-sizing: border-box;
+    }
 
-        .card {
-            background-color: var(--card-dark);
-            border-radius: 16px;
-            padding: 20px 18px 24px;
-            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
-        }
+    .container {
+      width: 100%;
+      max-width: 1200px;
+    }
 
-        body.light .card {
-            background-color: var(--card-light);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-        }
+    .card {
+      background: #111118;
+      border-radius: var(--border-radius);
+      padding: 18px 18px 24px;
+      box-sizing: border-box;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.6);
+      margin-bottom: 18px;
+    }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            gap: 16px;
-        }
+    .card.light {
+      background: var(--bg-card-light);
+      color: var(--text-light);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
 
-        .field-group {
-            margin-bottom: 14px;
-        }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
 
-        label {
-            display: block;
-            font-size: 0.9rem;
-            margin-bottom: 4px;
-        }
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #ffb199, #ff0844);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: white;
+      font-size: 22px;
+    }
 
-        .input, select {
-            width: 100%;
-            box-sizing: border-box;
-            border-radius: 10px;
-            border: 1px solid #444;
-            padding: 10px 12px;
-            background: #151518;
-            color: #f5f5f5;
-            font-size: 0.95rem;
-        }
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent-soft);
+    }
 
-        body.light .input,
-        body.light select {
-            background: #fdfdfd;
-            border-color: #ccc;
-            color: #111;
-        }
+    .subtitle {
+      font-size: 13px;
+      color: var(--subtext-dark);
+    }
 
-        .input[readonly] {
-            opacity: 0.7;
-            cursor: default;
-        }
+    .row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
 
-        .checkbox-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
+    .row > .col {
+      flex: 1 1 240px;
+    }
 
-        .checkbox-row input[type="checkbox"] {
-            transform: scale(1.1);
-        }
+    .field-label {
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
 
-        .button-row {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-        }
+    .field-label span.small {
+      font-size: 11px;
+      opacity: 0.8;
+    }
 
-        .btn {
-            flex: 1;
-            border-radius: 999px;
-            padding: 12px 18px;
-            border: none;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 1px solid #2b2b3b;
+      padding: 8px 10px;
+      background: var(--bg-input-dark);
+      color: var(--text-dark);
+      font-size: 14px;
+      outline: none;
+    }
 
-        .btn-primary {
-            background: var(--sm-red);
-            color: white;
-        }
+    input[readonly] {
+      background: #222231;
+      cursor: default;
+    }
 
-        .btn-primary:hover {
-            background: var(--sm-red-dark);
-        }
+    .card.light input[type="text"],
+    .card.light input[type="number"],
+    .card.light select {
+      background: var(--bg-input-light);
+      border-color: #dadbe5;
+      color: var(--text-light);
+    }
 
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #666;
-            color: inherit;
-        }
+    input::placeholder {
+      color: #707086;
+    }
 
-        .section-title {
-            margin: 22px 0 6px;
-            font-size: 1.05rem;
-            font-weight: 600;
-            color: var(--sm-red);
-        }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
 
-        .section-subtitle {
-            font-size: 0.85rem;
-            margin-bottom: 12px;
-            opacity: 0.8;
-        }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
 
-        .banks-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
-            gap: 10px 12px;
-            align-items: center;
-        }
+    .btn {
+      flex: 1;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
 
-        .banks-header {
-            font-size: 0.8rem;
-            opacity: 0.8;
-            margin-bottom: 4px;
-        }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
 
-        .bank-name {
-            font-size: 0.9rem;
-        }
+    .btn-primary:hover {
+      background: #d45735;
+    }
 
-        .results-card {
-            margin-top: 20px;
-            padding: 16px 16px 18px;
-            border-radius: 14px;
-            background: rgba(0, 0, 0, 0.4);
-        }
+    .btn-secondary {
+      background: #2b2b3b;
+      color: #f8f8ff;
+    }
 
-        body.light .results-card {
-            background: #fafafa;
-        }
+    .btn-secondary:hover {
+      background: #3a3a4f;
+    }
 
-        .results-title {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--sm-red);
-        }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--accent-soft);
+    }
 
-        .results-list {
-            margin: 0;
-            padding-left: 20px;
-            font-size: 0.9rem;
-        }
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--subtext-dark);
+      margin-bottom: 10px;
+    }
 
-        .results-list li + li {
-            margin-top: 3px;
-        }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
 
-        @media (max-width: 900px) {
-            .banks-grid {
-                grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
-            }
-        }
+    th, td {
+      padding: 6px 4px;
+    }
 
-        @media (max-width: 720px) {
-            .grid-2 {
-                grid-template-columns: minmax(0, 1fr);
-            }
+    th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--subtext-dark);
+    }
 
-            .banks-grid {
-                grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-            }
+    td input[type="number"] {
+      font-size: 13px;
+      padding: 6px 8px;
+    }
 
-            .banks-grid .rate-col-header {
-                display: none;
-            }
-        }
+    td select {
+      font-size: 13px;
+      padding: 6px 8px;
+    }
 
-        @media (max-width: 520px) {
-            header h1 {
-                font-size: 1.35rem;
-            }
+    .results-card {
+      border-left: 4px solid var(--accent);
+    }
 
-            .wrapper {
-                padding-inline: 10px;
-            }
-        }
-    </style>
+    .results-list {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 13px;
+    }
+
+    .results-list li {
+      margin-bottom: 4px;
+    }
+
+    .results-list strong {
+      color: var(--accent-soft);
+    }
+
+    .results-bank {
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .results-bank-item {
+      margin-bottom: 2px;
+    }
+
+    .align-right {
+      text-align: right;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #222231;
+      color: #f8f8ff;
+      margin-left: 6px;
+    }
+
+    .card.light .tag {
+      background: #ececf5;
+      color: #333;
+    }
+
+    @media (max-width: 768px) {
+      .title {
+        font-size: 18px;
+      }
+      .card {
+        padding: 14px 12px 18px;
+      }
+      .actions {
+        flex-direction: column;
+      }
+      .btn {
+        width: 100%;
+      }
+      th, td {
+        font-size: 12px;
+      }
+    }
+  </style>
 </head>
-<body class="{{ 'light' if theme == 'light' else 'dark' }}">
-<div class="wrapper">
-    <header>
-        <!-- Logo now served from /static -->
-        <img src="{{ url_for('static', filename='scootermania_logo.png') }}"
-             alt="ScooterMania" class="logo">
-        <h1>{{ strings.title }}</h1>
-    </header>
+<body>
+<div class="page">
+  <div class="container">
 
-    <div class="card">
-        <form method="post">
-            <div class="grid-2">
-                <div class="field-group">
-                    <label for="language">{{ strings.language_label }}</label>
-                    <select id="language" name="language">
-                        <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
-                        <option value="es" {% if lang == 'es' %}selected{% endif %}>Español</option>
-                    </select>
-                </div>
+    <form method="post" action="/">
+      <input type="hidden" name="theme" value="{{ form.theme }}">
 
-                <div class="field-group">
-                    <label for="theme">{{ strings.theme_label }}</label>
-                    <select id="theme" name="theme">
-                        <option value="dark" {% if theme == 'dark' %}selected{% endif %}>Dark</option>
-                        <option value="light" {% if theme == 'light' %}selected{% endif %}>Light</option>
-                    </select>
-                </div>
+      <!-- TOP CARD -->
+      <div class="card {% if form.theme == 'light' %}light{% endif %}">
+        <div class="card-header">
+          <div class="logo">S</div>
+          <div>
+            <div class="title">ScooterMania – Financing Price Calculator (Web)</div>
+            <div class="subtitle">
+              Calculate bank fees, net to store & profit with or without passing bank commissions.
             </div>
+          </div>
+        </div>
 
-            <div class="field-group">
-                <label for="total_price">{{ strings.total_price_label }}</label>
-                <input class="input" id="total_price" name="total_price" type="number" step="0.01"
-                       value="{{ form_data.total_price }}">
-            </div>
+        <!-- Language & Theme -->
+        <div class="row">
+          <div class="col">
+            <label class="field-label" for="language">
+              Language
+            </label>
+            <select id="language" name="language" onchange="this.form.submit()">
+              <option value="en" {% if form.language == 'en' %}selected{% endif %}>English</option>
+              <option value="es" {% if form.language == 'es' %}selected{% endif %}>Español</option>
+            </select>
+          </div>
+          <div class="col">
+            <label class="field-label" for="theme">
+              Theme
+            </label>
+            <select id="theme-select" name="theme" onchange="this.form.submit()">
+              <option value="dark" {% if form.theme == 'dark' %}selected{% endif %}>Dark</option>
+              <option value="light" {% if form.theme == 'light' %}selected{% endif %}>Light</option>
+            </select>
+          </div>
+        </div>
 
-            <div class="checkbox-row">
-                <input type="checkbox" id="include_shipping" name="include_shipping"
-                       {% if form_data.include_shipping %}checked{% endif %}>
-                <label for="include_shipping">{{ strings.shipping_toggle }}</label>
-            </div>
+        <div style="height:10px;"></div>
 
-            <div class="grid-2">
-                <div class="field-group">
-                    <label for="tax_rate">{{ strings.tax_rate_label }}</label>
-                    <!-- 7% fixed, read-only -->
-                    <input class="input" id="tax_rate" type="number" step="0.01"
-                           value="{{ tax_rate }}" readonly>
-                </div>
+        <!-- Core inputs -->
+        <div class="row">
+          <div class="col">
+            <label class="field-label" for="total_price">
+              {% if form.language == 'es' %}
+                Precio total al cliente (incl. envío):
+              {% else %}
+                Total price to customer (incl. shipping):
+              {% endif %}
+            </label>
+            <input type="number" step="0.01" id="total_price" name="total_price"
+                   value="{{ form.total_price }}">
+          </div>
+        </div>
 
-                <div class="field-group">
-                    <label for="bike_cost">{{ strings.bike_cost_label }}</label>
-                    <input class="input" id="bike_cost" name="bike_cost" type="number" step="0.01"
-                           value="{{ form_data.bike_cost }}">
-                </div>
-            </div>
-
-            <div class="field-group">
-                <label for="seller_commission">{{ strings.seller_commission_label }}</label>
-                <input class="input" id="seller_commission" name="seller_commission" type="number" step="0.01"
-                       value="{{ form_data.seller_commission }}">
-            </div>
-
-            <div class="button-row">
-                <button class="btn btn-primary" type="submit" name="action" value="calculate">
-                    {{ strings.calculate }}
-                </button>
-                <button class="btn btn-outline" type="submit" name="action" value="clear">
-                    {{ strings.clear }}
-                </button>
-            </div>
-
-            <div class="section-title">{{ strings.financing_section_title }}</div>
-            <div class="section-subtitle">{{ strings.financing_section_hint }}</div>
-
-            <div class="banks-grid">
-                <div class="banks-header">{{ 'Company' if lang == 'en' else 'Financiera' }}</div>
-                <div class="banks-header">{{ 'Amount financed ($)' if lang == 'en' else 'Monto financiado ($)' }}</div>
-                <div class="banks-header rate-col-header">{{ 'Rate %' if lang == 'en' else '% comerciante' }}</div>
-
-                {% for bank in banks %}
-                    <div class="bank-name">
-                        {{ bank.name_en if lang == 'en' else bank.name_es }}
-                    </div>
-                    <div>
-                        <input class="input" type="number" step="0.01"
-                               name="{{ bank.key }}_amount"
-                               value="{{ bank_form[bank.key ~ '_amount'] }}">
-                    </div>
-                    <div>
-                        {% if bank.rate_choices %}
-                            <select class="input" name="{{ bank.key }}_rate">
-                                {% for choice in bank.rate_choices %}
-                                    <option value="{{ choice }}"
-                                        {% if bank_rate_values[bank.key ~ '_rate']|float == choice %}selected{% endif %}>
-                                        {{ "%.2f%%"|format(choice) }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        {% else %}
-                            <input class="input" type="number" step="0.01"
-                                   name="{{ bank.key }}_rate"
-                                   value="{{ bank_rate_values[bank.key ~ '_rate'] }}">
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-
-            {% if results %}
-                <div class="results-card">
-                    <div class="results-title">{{ strings.results_title }}</div>
-                    <ul class="results-list">
-                        {% for label, value in results %}
-                            <li><strong>{{ label }}</strong> {{ value }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="include_shipping" name="include_shipping"
+                 {% if form.include_shipping %}checked{% endif %}>
+          <label for="include_shipping" style="font-size:12px;">
+            {% if form.language == 'es' %}
+              Incluir envío fijo ${{ '%.0f'|format(shipping_amount) }} (no gravado, no ingreso)
+            {% else %}
+              Include fixed shipping ${{ '%.0f'|format(shipping_amount) }} (not taxed, not revenue)
             {% endif %}
-        </form>
-    </div>
+          </label>
+        </div>
+
+        <div style="height:8px;"></div>
+
+        <div class="row">
+          <div class="col">
+            <label class="field-label" for="tax_rate">
+              {% if form.language == 'es' %}
+                Tasa de impuesto % (FL) – fija:
+              {% else %}
+                Tax rate % (FL) – fixed:
+              {% endif %}
+            </label>
+            <input type="number" id="tax_rate" name="tax_rate" value="{{ tax_rate_percent }}"
+                   readonly>
+          </div>
+          <div class="col">
+            <label class="field-label" for="bike_cost">
+              {% if form.language == 'es' %}
+                Costo de la moto para ti ($):
+              {% else %}
+                Bike cost to you ($):
+              {% endif %}
+            </label>
+            <input type="number" step="0.01" id="bike_cost" name="bike_cost"
+                   value="{{ form.bike_cost }}">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label class="field-label" for="seller_commission">
+              {% if form.language == 'es' %}
+                Comisión del vendedor ($):
+              {% else %}
+                Seller commission ($):
+              {% endif %}
+            </label>
+            <input type="number" step="0.01" id="seller_commission" name="seller_commission"
+                   value="{{ form.seller_commission }}">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">
+            {% if form.language == 'es' %}Calcular{% else %}Calculate{% endif %}
+          </button>
+          <button type="button" class="btn btn-secondary"
+                  onclick="window.location='/'">
+            {% if form.language == 'es' %}Limpiar{% else %}Clear{% endif %}
+          </button>
+        </div>
+      </div>
+
+      <!-- BANKS CARD -->
+      <div class="card {% if form.theme == 'light' %}light{% endif %}">
+        <div class="section-title">
+          {% if form.language == 'es' %}
+            Financieras (ingrese el MONTO financiado por cada una):
+          {% else %}
+            Financing companies (enter AMOUNT financed for this deal):
+          {% endif %}
+        </div>
+        <div class="section-subtitle">
+          {% if form.language == 'es' %}
+            Cada monto usa el porcentaje de comisión de esa financiera.
+          {% else %}
+            Each amount uses that company's merchant fee rate.
+          {% endif %}
+        </div>
+
+        <table>
+          <thead>
+          <tr>
+            <th>{% if form.language == 'es' %}Financiera{% else %}Company{% endif %}</th>
+            <th class="align-right">
+              {% if form.language == 'es' %}Monto financiado ($){% else %}Amount financed ($){% endif %}
+            </th>
+            <th class="align-right">Rate %</th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for key, bank in banks.items() %}
+            {% set name_en = bank[0] %}
+            {% set name_es = bank[1] %}
+            {% set rates = bank[2] %}
+            {% set b = bank_form[key] %}
+            <tr>
+              <td>
+                {% if form.language == 'es' %}
+                  {{ name_es }}
+                {% else %}
+                  {{ name_en }}
+                {% endif %}
+              </td>
+              <td class="align-right">
+                <input type="number" step="0.01" name="{{ key }}_amount"
+                       value="{{ b.amount }}">
+              </td>
+              <td class="align-right">
+                <select name="{{ key }}_rate">
+                  {% for r in rates %}
+                    <option value="{{ r }}" {% if b.rate == r %}selected{% endif %}>
+                      {{ '%.2f'|format(r) }}%
+                    </option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RESULTS CARD -->
+      {% if results %}
+        <div class="card results-card {% if form.theme == 'light' %}light{% endif %}">
+          <div class="section-title">
+            {{ results.labels.results_title }}
+          </div>
+
+          <ul class="results-list">
+            <li>
+              <strong>{{ results.labels.bike_before_tax }}</strong>
+              ${{ "%.2f"|format(results.bike_before_tax) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.tax_amount }}</strong>
+              ${{ "%.2f"|format(results.tax_amount) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.subtotal_no_shipping }}</strong>
+              ${{ "%.2f"|format(results.subtotal_no_shipping) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.shipping }}</strong>
+              ${{ "%.2f"|format(results.shipping) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.gross_income }}</strong>
+              ${{ "%.2f"|format(results.gross_income) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.total_bank }}</strong>
+              ${{ "%.2f"|format(results.total_bank_fees) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.no_pass_net }}</strong>
+              ${{ "%.2f"|format(results.net_no_pass) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.no_pass_profit }}</strong>
+              ${{ "%.2f"|format(results.profit_no_pass) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.pass_price }}</strong>
+              ${{ "%.2f"|format(results.customer_price_with_fees) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.pass_net }}</strong>
+              ${{ "%.2f"|format(results.net_with_pass) }}
+            </li>
+            <li>
+              <strong>{{ results.labels.pass_profit }}</strong>
+              ${{ "%.2f"|format(results.profit_with_pass) }}
+            </li>
+          </ul>
+
+          <div class="results-bank">
+            <div><strong>{{ results.labels.bank_breakdown_title }}</strong></div>
+            {% for b in results.bank_results %}
+              {% if b.amount > 0 %}
+                <div class="results-bank-item">
+                  {% if form.language == 'es' %}
+                    {{ b.name_es }}
+                  {% else %}
+                    {{ b.name_en }}
+                  {% endif %}
+                  – ${{ "%.2f"|format(b.amount) }}
+                  @ {{ "%.2f"|format(b.rate) }}% =
+                  ${{ "%.2f"|format(b.fee) }}
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </form>
+  </div>
 </div>
 </body>
 </html>
