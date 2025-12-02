@@ -302,7 +302,9 @@
       <!-- TOP CARD -->
       <div class="card {% if form.theme == 'light' %}light{% endif %}">
         <div class="card-header">
-          <div class="logo">S</div>
+<img src="{{ url_for('static', filename='scootermania_logo.png') }}"
+     alt="ScooterMania" class="logo"
+     style="border-radius:999px;object-fit:cover;">
           <div>
             <div class="title">ScooterMania – Financing Price Calculator (Web)</div>
             <div class="subtitle">
@@ -552,3 +554,4 @@
 </div>
 </body>
 </html>
+
