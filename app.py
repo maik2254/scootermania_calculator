@@ -2,9 +2,9 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
-# --- CONSTANTS ---
-TAX_RATE_PERCENT = 7.0             # Fixed FL tax
-FIXED_SHIPPING_AMOUNT = 900.0      # Fixed shipping, NOT taxed, NOT revenue
+# ------------ CONSTANTS ------------
+TAX_RATE_PERCENT = 7.0              # Fixed FL tax
+FIXED_SHIPPING_AMOUNT = 900.0       # Fixed shipping, not taxed, not revenue
 
 # Bank definitions: key -> (name_en, name_es, list_of_possible_rates)
 BANKS = {
@@ -22,7 +22,7 @@ BANKS = {
 
 
 def parse_float(value, default=0.0):
-    """Safely convert a form value to float."""
+    """Safely parse a float from form values."""
     try:
         return float(str(value).replace(",", "").strip())
     except (TypeError, ValueError):
@@ -31,7 +31,7 @@ def parse_float(value, default=0.0):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    # ---------- Language & theme ----------
+    # ---------- Language & Theme ----------
     lang = request.values.get("language", "en")
     if lang not in ("en", "es"):
         lang = "en"
@@ -44,41 +44,44 @@ def index():
     form_values = {
         "total_price": "",
         "include_shipping": True,
-        "tax_rate": TAX_RATE_PERCENT,  # shown but NOT editable
+        "tax_rate": TAX_RATE_PERCENT,  # displayed but not editable
         "bike_cost": "",
-        "seller_commission": "",       # still in form, even if not used in math now
+        "seller_commission": "",
+        "theme": theme,
+        "language": lang,
     }
 
-    # Bank form values (amount + selected rate)
+    # Bank form values initial state
     bank_form = {}
     for key, (_, _, rates) in BANKS.items():
         bank_form[key] = {
             "amount": "",
-            "rate": rates[0],  # default rate
+            "rate": rates[0],
         }
 
     results = None
 
-    # ---------- POST: do the calculation ----------
+    # ---------- Handle POST / calculations ----------
     if request.method == "POST":
         # Main numeric inputs
         total_price = parse_float(request.form.get("total_price"))
         include_shipping = request.form.get("include_shipping") == "on"
-        bike_cost = parse_float(request.form.get("bike_cost"))
-        seller_commission = parse_float(request.form.get("seller_commission"))  # kept for display if you want
-
-        # Lock tax at 7%, ignore anything user typed into tax field
+        # Tax rate is fixed at constant
         tax_rate_percent = TAX_RATE_PERCENT
+        bike_cost = parse_float(request.form.get("bike_cost"))
+        seller_commission_input = parse_float(request.form.get("seller_commission"))
 
-        # Keep values for re-fill in form
         form_values["total_price"] = total_price if total_price else ""
         form_values["include_shipping"] = include_shipping
         form_values["bike_cost"] = bike_cost if bike_cost else ""
-        form_values["seller_commission"] = seller_commission if seller_commission else ""
+        form_values["seller_commission"] = (
+            seller_commission_input if seller_commission_input else ""
+        )
 
-        # ---------- Read bank inputs ----------
+        # ----- Bank inputs -----
         bank_results = []
         total_bank_fees = 0.0
+        total_financed_principal = 0.0  # sum of amounts only
 
         for key, (name_en, name_es, rates) in BANKS.items():
             amount_field = f"{key}_amount"
@@ -95,6 +98,7 @@ def index():
             else:
                 fee = 0.0
 
+            total_financed_principal += amount
             total_bank_fees += fee
 
             bank_results.append(
@@ -111,7 +115,7 @@ def index():
         # ---------- Core math ----------
         shipping_amount = FIXED_SHIPPING_AMOUNT if include_shipping else 0.0
 
-        # Portion of total that is bike + tax only (shipping is NOT taxed & NOT revenue)
+        # Bike + tax part of total price (shipping is not taxed, not revenue)
         bike_plus_tax = max(total_price - shipping_amount, 0.0)
 
         tax_rate = tax_rate_percent / 100.0
@@ -122,26 +126,38 @@ def index():
 
         tax_amount = bike_plus_tax - bike_price_before_tax
 
-        # This is what actually comes in from the deal (bike + tax, no shipping)
-        gross_income_no_shipping = bike_plus_tax
+        # Income the store gets from the sale (bike + tax only, no shipping)
+        gross_income = bike_plus_tax
 
-        # ---------- Case A: you do NOT pass bank fees ----------
-        net_to_store_no_bank_pass = gross_income_no_shipping - total_bank_fees
-        # Profit here = net to store after bank fees - bike cost
-        # (NOT subtracting seller_commission, since you want the "deal profit")
-        profit_no_bank_pass = net_to_store_no_bank_pass - bike_cost
+        # Case A: merchant does NOT pass bank fees to the customer
+        net_no_pass = gross_income - total_bank_fees
+        # Profit if you eat the bank fees: after bike cost, before commission split
+        profit_no_pass = net_no_pass - bike_cost
 
-        # ---------- Case B: you PASS bank fees ----------
-        # Customer pays bank fees on top of total
+        # Case B: merchant PASSES bank fees to the customer
         customer_price_with_fees = total_price + total_bank_fees
-        # Store still only keeps bike + tax (no shipping as revenue)
-        net_to_store_with_bank_pass = gross_income_no_shipping
+        net_with_pass = gross_income  # store keeps bike + tax; customer pays fees on top
 
-        # You told me: when you pass fees, that last line should be 900 in your example.
-        # That corresponds to: bike_price_before_tax - bike_cost
-        profit_with_bank_pass = bike_price_before_tax - bike_cost
+        # Commission logic: margin on the bike (before tax) vs cost
+        commission_total = bike_price_before_tax - bike_cost
+        if commission_total < 0:
+            commission_total = 0.0
+        commission_store = commission_total / 2.0
+        commission_seller = commission_total / 2.0
 
-        # ---------- Labels (EN / ES) ----------
+        # For the last line ("profit after cost + commission") the user
+        # wants to treat it as total commission amount when fees are passed.
+        profit_with_pass = commission_total
+
+        # Total financed INCLUDING fees (for missing amount calculation)
+        total_financed_including_fees = 0.0
+        for b in bank_results:
+            total_financed_including_fees += b["amount"] + b["fee"]
+
+        # Amount missing from total price
+        missing_amount = total_price - total_financed_including_fees
+
+        # ---------- Labels ----------
         if lang == "es":
             labels = {
                 "results_title": "Resultados",
@@ -152,10 +168,14 @@ def index():
                 "gross_income": "Ingreso bruto (solo moto + impuesto):",
                 "total_bank": "Comisiones bancarias totales:",
                 "no_pass_net": "Si NO Pasas Comisión Del Banco – Neto a la tienda:",
-                "no_pass_profit": "Si NO Pasas Comisión Del Banco – Ganancia después de costo + comisión:",
+                "no_pass_profit": "Si NO Pasas Comisión Del Banco – Ganancia después de costo:",
                 "pass_price": "Si PASAS Comisión Del Banco – Precio al cliente (incl. comisiones):",
                 "pass_net": "Si PASAS Comisión Del Banco – Neto a la tienda (solo moto + impuesto):",
-                "pass_profit": "Si PASAS Comisión Del Banco – Ganancia después de costo + comisión:",
+                "pass_profit": "Si PASAS Comisión Del Banco – Comisión total (tienda + vendedor):",
+                "commission_total": "Comisión total (tienda + vendedor):",
+                "commission_store": "Comisión de la tienda (50%):",
+                "commission_seller": "Comisión del vendedor (50%):",
+                "missing_amount": "Monto faltante del precio total:",
                 "bank_breakdown_title": "Detalle de comisiones por banco:",
             }
         else:
@@ -168,10 +188,14 @@ def index():
                 "gross_income": "Gross income (bike + tax only):",
                 "total_bank": "Total bank fees:",
                 "no_pass_net": "If you DO NOT pass bank fees – Net to store:",
-                "no_pass_profit": "If you DO NOT pass bank fees – Profit after cost + commission:",
+                "no_pass_profit": "If you DO NOT pass bank fees – Profit after cost:",
                 "pass_price": "If you PASS bank fees – Customer price (incl. fees):",
                 "pass_net": "If you PASS bank fees – Net to store (bike + tax only):",
-                "pass_profit": "If you PASS bank fees – Profit after cost + commission:",
+                "pass_profit": "If you PASS bank fees – Total commission (store + seller):",
+                "commission_total": "Total commission (store + seller):",
+                "commission_store": "Store commission (50%):",
+                "commission_seller": "Seller commission (50%):",
+                "missing_amount": "Missing amount from total price:",
                 "bank_breakdown_title": "Bank fee breakdown by company:",
             }
 
@@ -181,17 +205,23 @@ def index():
             "tax_amount": tax_amount,
             "subtotal_no_shipping": bike_plus_tax,
             "shipping": shipping_amount,
-            "gross_income": gross_income_no_shipping,
+            "gross_income": gross_income,
             "total_bank_fees": total_bank_fees,
-            "net_no_pass": net_to_store_no_bank_pass,
-            "profit_no_pass": profit_no_bank_pass,
+            "net_no_pass": net_no_pass,
+            "profit_no_pass": profit_no_pass,
             "customer_price_with_fees": customer_price_with_fees,
-            "net_with_pass": net_to_store_with_bank_pass,
-            "profit_with_pass": profit_with_bank_pass,
+            "net_with_pass": net_with_pass,
+            "profit_with_pass": profit_with_pass,
             "bank_results": bank_results,
+            "commission_total": commission_total,
+            "commission_store": commission_store,
+            "commission_seller": commission_seller,
+            "missing_amount": missing_amount,
+            "total_financed_principal": total_financed_principal,
+            "total_financed_including_fees": total_financed_including_fees,
         }
 
-    # ---------- Render ----------
+    # ---------- Render template ----------
     return render_template(
         "index.html",
         form=form_values,
@@ -200,8 +230,6 @@ def index():
         results=results,
         tax_rate_percent=TAX_RATE_PERCENT,
         shipping_amount=FIXED_SHIPPING_AMOUNT,
-        language=lang,
-        theme=theme,
     )
 
 
