@@ -14,10 +14,9 @@ BANKS = {
     "synchrony": ("Synchrony", "Synchrony", [5.0, 9.0, 13.5]),
     "afterpay": ("Afterpay", "Afterpay", [6.0]),
     "usbank": ("US Bank", "US Bank", [5.0, 8.0, 10.0, 12.0, 14.0, 16.0]),
-    "snap": ("Snap Finance", "Snap Finance", [2.0]),
-    "progressive": ("Progressive", "Progressive", [2.0]),
-    "zip": ("Zip", "Zip", [6.0]),
-    "klarna": ("Klarna", "Klarna", [6.0]),
+    "dignifi": ("Dignifi", "Dignifi", [6.0, 8.0, 10.0]),
+    "square": ("Square Installments", "Square Installments", [3.0, 5.0, 7.0]),
+    "wave": ("Wave Financing", "Wave Financing", [2.0, 4.0, 6.0]),
 }
 
 
@@ -56,7 +55,10 @@ def index():
     for key, (name_en, name_es, rates) in BANKS.items():
         bank_form[key] = {
             "amount": "",
-            "rate": rates[0],  # default dropdown selection
+            "rate": rates[0],
+            "name_en": name_en,
+            "name_es": name_es,
+            "rates": rates,
         }
 
     results = None
@@ -144,6 +146,17 @@ def index():
         # For the legacy "profit_with_pass" field we now surface the commission total
         profit_with_bank_pass = commission_pass_total
 
+        # --- Total financed amounts (for "amount missing" field) ---
+        total_financed_principal = sum(
+            (b["amount"] or 0.0) for b in bank_results
+        )
+        total_financed_with_fees = sum(
+            (b["amount"] or 0.0) + (b["fee"] or 0.0) for b in bank_results
+        )
+        # This is what you asked for:
+        # total price - (all financed amounts + their fees)
+        missing_amount = total_price - total_financed_with_fees if total_price else 0.0
+
         # Build labels depending on language
         if lang == "es":
             labels = {
@@ -155,6 +168,7 @@ def index():
                 "gross_income": "Ingreso bruto (solo moto + impuesto):",
                 "manual_bank": "Comisión manual de banco:",
                 "total_bank": "Comisiones bancarias totales:",
+                "missing_amount": "Monto que falta por financiar (precio total menos monto financiado + comisiones):",
                 "no_pass_net": "Si NO Pasas Comisión Del Banco – Neto a la tienda:",
                 "no_pass_profit": "Si NO Pasas Comisión Del Banco – Ganancia después de costo + comisión:",
                 "pass_price": "Si PASAS Comisión Del Banco – Precio al cliente (incl. comisiones):",
@@ -175,6 +189,7 @@ def index():
                 "gross_income": "Gross income (bike + tax only):",
                 "manual_bank": "Manual bank fee:",
                 "total_bank": "Total bank fees:",
+                "missing_amount": "Amount missing from total price (price minus financed amount + fees):",
                 "no_pass_net": "If you DO NOT pass bank fees – Net to store:",
                 "no_pass_profit": "If you DO NOT pass bank fees – Profit after cost + commission:",
                 "pass_price": "If you PASS bank fees – Customer price (incl. fees):",
@@ -202,6 +217,7 @@ def index():
             "commission_pass_total": commission_pass_total,
             "commission_pass_store": commission_pass_store,
             "commission_pass_seller": commission_pass_seller,
+            "missing_amount": missing_amount,
             "bank_results": bank_results,
         }
 
