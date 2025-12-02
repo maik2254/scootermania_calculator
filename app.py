@@ -22,6 +22,7 @@ BANKS = {
 
 
 def parse_float(value, default=0.0):
+    """Convert form string to float, safely."""
     try:
         return float(str(value).replace(",", "").strip())
     except (TypeError, ValueError):
@@ -46,11 +47,13 @@ def index():
         "tax_rate": TAX_RATE_PERCENT,  # Always 7, shown but not editable
         "bike_cost": "",
         "seller_commission": "",
+        "theme": theme,
+        "language": lang,
     }
 
     # Bank form values (amount + selected rate)
     bank_form = {}
-    for key, (_, _, rates) in BANKS.items():
+    for key, (name_en, name_es, rates) in BANKS.items():
         bank_form[key] = {
             "amount": "",
             "rate": rates[0],  # default dropdown selection
@@ -59,10 +62,10 @@ def index():
     results = None
 
     if request.method == "POST":
-        # --- Read main inputs ---
+        # --- Core inputs ---
         total_price = parse_float(request.form.get("total_price"))
         include_shipping = request.form.get("include_shipping") == "on"
-        # Tax is fixed at 7%
+        # tax_rate is fixed constant:
         tax_rate_percent = TAX_RATE_PERCENT
         bike_cost = parse_float(request.form.get("bike_cost"))
         seller_commission = parse_float(request.form.get("seller_commission"))
@@ -70,9 +73,7 @@ def index():
         form_values["total_price"] = total_price if total_price else ""
         form_values["include_shipping"] = include_shipping
         form_values["bike_cost"] = bike_cost if bike_cost else ""
-        form_values["seller_commission"] = (
-            seller_commission if seller_commission else ""
-        )
+        form_values["seller_commission"] = seller_commission if seller_commission else ""
 
         # --- Bank inputs ---
         bank_results = []
@@ -132,17 +133,16 @@ def index():
         customer_price_with_fees = total_price + total_bank_fees
         net_to_store_with_bank_pass = gross_income_no_shipping
 
-        # Commission logic:
-        # Treat the LAST LINE (pass-bank-fees line) as the commission amount.
-        # Commission is defined as: bike price before tax - bike cost.
-        commission_total = bike_price_before_tax - bike_cost
-        if commission_total < 0:
-            commission_total = 0.0
-        commission_store = commission_total / 2.0
-        commission_seller = commission_total / 2.0
+        # Commission when PASSING fees:
+        # We treat the last line as commission amount based on bike margin
+        commission_pass_total = bike_price_before_tax - bike_cost
+        if commission_pass_total < 0:
+            commission_pass_total = 0.0
+        commission_pass_store = commission_pass_total / 2.0
+        commission_pass_seller = commission_pass_total / 2.0
 
-        # For compatibility, profit_with_bank_pass is now the TOTAL commission.
-        profit_with_bank_pass = commission_total
+        # For the legacy "profit_with_pass" field we now surface the commission total
+        profit_with_bank_pass = commission_pass_total
 
         # Build labels depending on language
         if lang == "es":
@@ -159,11 +159,11 @@ def index():
                 "no_pass_profit": "Si NO Pasas Comisión Del Banco – Ganancia después de costo + comisión:",
                 "pass_price": "Si PASAS Comisión Del Banco – Precio al cliente (incl. comisiones):",
                 "pass_net": "Si PASAS Comisión Del Banco – Neto a la tienda (solo moto + impuesto):",
-                "pass_profit": "Si PASAS Comisión Del Banco – Ganancia después de costo + comisión:",
+                "pass_profit": "Si PASAS Comisión Del Banco – Comisión total (margen de moto después de costo):",
+                "commission_pass_total": "Comisión total (margen de moto con comisiones del banco pasadas):",
+                "commission_pass_store": "Comisión para la tienda (50%):",
+                "commission_pass_seller": "Comisión para el vendedor (50%):",
                 "bank_breakdown_title": "Detalle de comisiones por banco:",
-                "commission_total": "Comisión total (tienda + vendedor):",
-                "commission_store": "Comisión para la tienda:",
-                "commission_seller": "Comisión para el vendedor:",
             }
         else:
             labels = {
@@ -179,11 +179,11 @@ def index():
                 "no_pass_profit": "If you DO NOT pass bank fees – Profit after cost + commission:",
                 "pass_price": "If you PASS bank fees – Customer price (incl. fees):",
                 "pass_net": "If you PASS bank fees – Net to store (bike + tax only):",
-                "pass_profit": "If you PASS bank fees – Profit after cost + commission:",
+                "pass_profit": "If you PASS bank fees – Commission total (bike margin after cost):",
+                "commission_pass_total": "Commission total (bike margin when passing bank fees):",
+                "commission_pass_store": "Commission share – store (50%):",
+                "commission_pass_seller": "Commission share – seller (50%):",
                 "bank_breakdown_title": "Bank fee breakdown by company:",
-                "commission_total": "Commission total (store + seller):",
-                "commission_store": "Commission for store:",
-                "commission_seller": "Commission for seller:",
             }
 
         results = {
@@ -199,9 +199,9 @@ def index():
             "customer_price_with_fees": customer_price_with_fees,
             "net_with_pass": net_to_store_with_bank_pass,
             "profit_with_pass": profit_with_bank_pass,
-            "commission_total": commission_total,
-            "commission_store": commission_store,
-            "commission_seller": commission_seller,
+            "commission_pass_total": commission_pass_total,
+            "commission_pass_store": commission_pass_store,
+            "commission_pass_seller": commission_pass_seller,
             "bank_results": bank_results,
         }
 
