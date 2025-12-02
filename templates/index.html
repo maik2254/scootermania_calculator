@@ -1,397 +1,818 @@
-<!DOCTYPE html>
-<html lang="{{ language or 'en' }}">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>ScooterMania Financing Calculator</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <title>ScooterMania – Financing Price Calculator (Web)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Bootstrap CDN -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    >
+  <style>
+    :root {
+      --bg-dark: #050509;
+      --bg-card-dark: #111118;
+      --bg-input-dark: #181823;
+      --text-dark: #f8f8ff;
+      --subtext-dark: #ccccd9;
 
-    <style>
-        body {
-            background-color: {% if theme == 'light' %}#f5f5f5{% else %}#111{% endif %};
-            color: {% if theme == 'light' %}#222{% else %}#f5f5f5{% endif %};
-        }
-        .card {
-            background-color: {% if theme == 'light' %}#ffffff{% else %}#1e1e1e{% endif %};
-            border-radius: 12px;
-            border: 1px solid {% if theme == 'light' %}#ddd{% else %}#333{% endif %};
-            margin-bottom: 20px;
-        }
-        label {
-            font-weight: 600;
-        }
-        .logo {
-            max-width: 180px;
-            display: block;
-            margin: 20px auto 10px auto;
-        }
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-top: 20px;
-            border-bottom: 1px solid {% if theme == 'light' %}#ccc{% else %}#444{% endif %};
-            padding-bottom: 5px;
-        }
-        .result-row {
-            margin-bottom: 4px;
-        }
-        input[readonly] {
-            background-color: {% if theme == 'light' %}#eee{% else %}#333{% endif %};
-        }
-        .small-note {
-            font-size: 0.85rem;
-            opacity: 0.8;
-        }
-    </style>
+      --bg-light: #f5f5f9;
+      --bg-card-light: #ffffff;
+      --bg-input-light: #f0f0f6;
+      --text-light: #13141f;
+      --subtext-light: #5f6070;
+
+      --accent: #ff0844;
+      --accent-soft: rgba(255, 8, 68, 0.12);
+      --accent-soft-2: rgba(255, 8, 68, 0.08);
+      --accent-soft-3: rgba(255, 8, 68, 0.06);
+      --accent-strong: #ff4b2b;
+
+      --border-subtle-dark: #272738;
+      --border-subtle-light: #e0e0f0;
+
+      --danger: #ff3366;
+      --success: #22c55e;
+      --warning: #facc15;
+
+      --radius-lg: 18px;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255, 8, 68, 0.12), transparent 60%),
+        radial-gradient(circle at bottom right, rgba(79, 70, 229, 0.16), transparent 55%),
+        #020115;
+      min-height: 100vh;
+      color: var(--text-dark);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1120px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(12, 10, 24, 0.96));
+      border-radius: 26px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      box-shadow:
+        0 32px 80px rgba(15, 23, 42, 0.6),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .shell-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      backdrop-filter: blur(22px);
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.14), transparent 55%),
+        linear-gradient(120deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.85));
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #ffb199, #ff0844);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: white;
+      font-size: 22px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #f9fafb;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .select {
+      position: relative;
+    }
+
+    .select select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding: 7px 28px 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .select::after {
+      content: "▾";
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: rgba(148, 163, 184, 0.9);
+      pointer-events: none;
+    }
+
+    .theme-indicator {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      font-size: 11px;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .theme-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #facc15, #f97316);
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.8);
+    }
+
+    .shell-main {
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+      gap: 0;
+      min-height: 0;
+    }
+
+    .column {
+      flex: 1;
+      padding: 20px 22px 22px;
+      overflow-y: auto;
+    }
+
+    .column + .column {
+      border-left: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .panel {
+      background: radial-gradient(circle at top left, rgba(248, 250, 252, 0.02), transparent 65%);
+      border-radius: 22px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      padding: 16px 16px 18px;
+      box-shadow:
+        0 18px 38px rgba(15, 23, 42, 0.7),
+        0 0 0 1px rgba(15, 23, 42, 0.95) inset;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #e5e7eb;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-sub {
+      font-size: 11px;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 12px;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+    }
+
+    .field label {
+      color: rgba(209, 213, 219, 0.9);
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field input[type="number"],
+    .field input[type="text"] {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 1));
+      color: #f9fafb;
+      padding: 7px 10px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .field input[type="number"]:focus,
+    .field input[type="text"]:focus {
+      border-color: rgba(248, 250, 252, 0.85);
+      box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.35);
+    }
+
+    .field-help {
+      font-size: 10px;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.9);
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      padding: 7px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(120deg, #ff0844, #ff4b2b);
+      border-color: transparent;
+      color: #ffffff;
+      box-shadow:
+        0 10px 24px rgba(248, 113, 113, 0.5),
+        0 0 0 1px rgba(248, 250, 252, 0.35) inset;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.05);
+    }
+
+    .btn span.icon {
+      font-size: 14px;
+    }
+
+    .results-card {
+      margin-top: 8px;
+      padding: 12px 12px 16px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 60%),
+        radial-gradient(circle at bottom right, rgba(52, 211, 153, 0.16), transparent 60%),
+        rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow:
+        0 22px 40px rgba(15, 23, 42, 0.8),
+        0 0 0 1px rgba(15, 23, 42, 0.95) inset;
+    }
+
+    .results-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #f9fafb;
+      margin-bottom: 8px;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1.1fr;
+      gap: 8px 12px;
+    }
+
+    .results-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 11px;
+      color: rgba(226, 232, 240, 0.95);
+    }
+
+    .results-list li {
+      padding: 4px 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.3);
+    }
+
+    .results-list li:last-child {
+      border-bottom: none;
+    }
+
+    .results-list strong {
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .results-number {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .results-bank {
+      font-size: 11px;
+      color: rgba(226, 232, 240, 0.9);
+    }
+
+    .results-bank-item {
+      padding: 3px 0;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.3);
+    }
+
+    .results-bank-item:last-child {
+      border-bottom: none;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.55), transparent);
+      margin: 10px 0 8px;
+    }
+
+    .bank-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .bank-table thead th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: rgba(148, 163, 184, 0.9);
+      padding-bottom: 4px;
+      text-align: left;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .bank-table td {
+      padding: 6px 4px;
+      font-size: 11px;
+      color: rgba(226, 232, 240, 0.95);
+      border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+    }
+
+    .bank-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .bank-name {
+      font-weight: 500;
+    }
+
+    .align-right {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rate-select {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 1));
+      color: #f9fafb;
+      padding: 5px 9px;
+      font-size: 11px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    @media (max-width: 880px) {
+      .shell-main {
+        flex-direction: column;
+      }
+      .column + .column {
+        border-left: none;
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+      }
+      .shell-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .panel {
+        padding: 14px 10px 14px;
+      }
+      .column {
+        padding: 16px 12px 20px;
+      }
+      .shell-header {
+        padding: 14px 14px 10px;
+      }
+    }
+  </style>
 </head>
 <body>
-
-<div class="container py-3">
-
-    <!-- LOGO (make sure /static/logo.png exists) -->
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="ScooterMania" class="logo">
-
-    <!-- LANGUAGE & THEME -->
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <form method="get" class="d-flex align-items-center gap-2">
-            <div>
-                <label class="form-label mb-0">
-                    {% if language == 'es' %}Idioma{% else %}Language{% endif %}
-                </label>
-                <select name="language" class="form-select form-select-sm"
-                        onchange="this.form.submit()">
-                    <option value="en" {% if language == 'en' %}selected{% endif %}>English</option>
-                    <option value="es" {% if language == 'es' %}selected{% endif %}>Español</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="form-label mb-0">
-                    {% if language == 'es' %}Tema{% else %}Theme{% endif %}
-                </label>
-                <select name="theme" class="form-select form-select-sm"
-                        onchange="this.form.submit()">
-                    <option value="dark" {% if theme == 'dark' %}selected{% endif %}>
-                        {% if language == 'es' %}Oscuro{% else %}Dark{% endif %}
-                    </option>
-                    <option value="light" {% if theme == 'light' %}selected{% endif %}>
-                        {% if language == 'es' %}Claro{% else %}Light{% endif %}
-                    </option>
-                </select>
-            </div>
+<div class="page-wrapper">
+  <div class="shell">
+    <div class="shell-header">
+      <div class="logo-block">
+        <div class="logo-circle">S</div>
+        <div>
+          <div class="title">
+            <span>ScooterMania</span>
+          </div>
+          <div class="subtitle">
+            Financing &amp; Bank Fees Calculator – Web
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <form method="get" style="display:flex; gap:8px; align-items:center;">
+          <div class="select">
+            <select name="language" onchange="this.form.submit()">
+              <option value="en" {% if form.language == 'en' %}selected{% endif %}>English</option>
+              <option value="es" {% if form.language == 'es' %}selected{% endif %}>Español</option>
+            </select>
+          </div>
         </form>
+        <div class="theme-indicator">
+          <div class="theme-dot"></div>
+          <span>Dark mode</span>
+        </div>
+      </div>
     </div>
 
-    <!-- MAIN CARD -->
-    <div class="card p-3">
-        <form method="post" novalidate>
-            <input type="hidden" name="language" value="{{ language }}">
-            <input type="hidden" name="theme" value="{{ theme }}">
-
-            <!-- TOTAL PRICE -->
-            <div class="mb-3">
-                <label class="form-label">
-                    {% if language == 'es' %}
-                        Precio total al cliente (incluye impuestos + envío):
-                    {% else %}
-                        Total price to customer (includes tax + shipping):
-                    {% endif %}
-                </label>
-                <input type="number"
-                       class="form-control"
-                       name="total_price"
-                       step="0.01"
-                       value="{{ form.total_price }}">
+    <div class="shell-main">
+      <div class="column">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">
+                {% if form.language == 'es' %}
+                  Datos de la operación
+                {% else %}
+                  Deal details
+                {% endif %}
+              </div>
+              <div class="panel-sub">
+                {% if form.language == 'es' %}
+                  Total al cliente, costo de la moto, envío y comisiones de bancos.
+                {% else %}
+                  Total to customer, bike cost, shipping and bank fee structure.
+                {% endif %}
+              </div>
             </div>
+          </div>
 
-            <!-- SHIPPING TOGGLE (fixed 900, non-editable) -->
-            <div class="mb-2 form-check">
-                <input class="form-check-input"
-                       type="checkbox"
-                       id="include_shipping"
-                       name="include_shipping"
-                       {% if form.include_shipping %}checked{% endif %}>
-                <label class="form-check-label" for="include_shipping">
-                    {% if language == 'es' %}
-                        Incluir envío fijo de ${{ '%.2f'|format(shipping_amount) }} (no gravado, no ingreso)
-                    {% else %}
-                        Include fixed shipping ${{ '%.2f'|format(shipping_amount) }} (not taxed, not revenue)
-                    {% endif %}
+          <form method="post">
+            <input type="hidden" name="language" value="{{ form.language }}">
+            <div class="form-grid">
+              <div class="field">
+                <label>
+                  {% if form.language == 'es' %}
+                    Precio total al cliente ($)
+                  {% else %}
+                    Total customer price ($)
+                  {% endif %}
                 </label>
-            </div>
-
-            <!-- TAX RATE DISPLAY (locked 7%) -->
-            <div class="mb-3">
-                <label class="form-label">
-                    {% if language == 'es' %}
-                        Impuesto estatal (fijo):
-                    {% else %}
-                        State tax (fixed):
-                    {% endif %}
-                </label>
-                <input type="text"
-                       class="form-control"
-                       value="{{ tax_rate_percent }}%"
-                       readonly>
-                <div class="small-note">
-                    {% if language == 'es' %}
-                        Fijado a 7%. No se puede cambiar.
-                    {% else %}
-                        Locked at 7%. Cannot be changed.
-                    {% endif %}
+                <input type="number" step="0.01" name="total_price"
+                       value="{{ form.total_price }}"
+                       placeholder="Ej: 3361">
+                <div class="field-help">
+                  {% if form.language == 'es' %}
+                    Incluye impuestos y envío si aplica.
+                  {% else %}
+                    Includes tax and shipping if enabled.
+                  {% endif %}
                 </div>
-            </div>
+              </div>
 
-            <!-- BIKE COST -->
-            <div class="mb-3">
-                <label class="form-label">
-                    {% if language == 'es' %}
-                        Costo de la moto para la tienda:
-                    {% else %}
-                        Bike cost to store:
-                    {% endif %}
+              <div class="field">
+                <label>
+                  {% if form.language == 'es' %}
+                    Costo de la moto ($)
+                  {% else %}
+                    Bike cost ($)
+                  {% endif %}
                 </label>
-                <input type="number"
-                       class="form-control"
-                       name="bike_cost"
-                       step="0.01"
+                <input type="number" step="0.01" name="bike_cost"
                        value="{{ form.bike_cost }}">
-            </div>
+                <div class="field-help">
+                  {% if form.language == 'es' %}
+                    Costo para el dealer (sin impuestos).
+                  {% else %}
+                    Your cost for the bike (no tax).
+                  {% endif %}
+                </div>
+              </div>
 
-            <!-- SELLER COMMISSION (we still keep it for future use or other cases) -->
-            <div class="mb-3">
-                <label class="form-label">
-                    {% if language == 'es' %}
-                        Comisión para el vendedor (opcional):
-                    {% else %}
-                        Seller commission (optional):
-                    {% endif %}
+              <div class="field">
+                <label>
+                  {% if form.language == 'es' %}
+                    Comisión del vendedor ($)
+                  {% else %}
+                    Seller commission ($)
+                  {% endif %}
                 </label>
-                <input type="number"
-                       class="form-control"
-                       name="seller_commission"
-                       step="0.01"
+                <input type="number" step="0.01" name="seller_commission"
                        value="{{ form.seller_commission }}">
+                <div class="field-help">
+                  {% if form.language == 'es' %}
+                    Monto que se paga al vendedor en esta venta.
+                  {% else %}
+                    Amount paid to the seller for this deal.
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="field">
+                <label>
+                  {% if form.language == 'es' %}
+                    Impuesto estatal (%)
+                  {% else %}
+                    State tax (%)
+                  {% endif %}
+                  <span>{{ tax_rate_percent }}%</span>
+                </label>
+                <input type="number" value="{{ tax_rate_percent }}" disabled>
+                <div class="field-help">
+                  {% if form.language == 'es' %}
+                    Fijado en 7% para Florida (no editable).
+                  {% else %}
+                    Fixed at 7% for Florida (not editable).
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="field" style="grid-column: 1 / -1;">
+                <label>
+                  {% if form.language == 'es' %}
+                    Envío fijo
+                  {% else %}
+                    Fixed shipping
+                  {% endif %}
+                </label>
+                <div class="checkbox-row">
+                  <input type="checkbox" name="include_shipping"
+                         {% if form.include_shipping %}checked{% endif %}>
+                  <span>
+                    {% if form.language == 'es' %}
+                      Incluir envío fijo de ${{ "%.2f"|format(shipping_amount) }} (no se grava y no es ingreso).
+                    {% else %}
+                      Include fixed shipping of ${{ "%.2f"|format(shipping_amount) }} (not taxed and not revenue).
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <!-- BANK SECTION -->
-            <h5 class="section-title">
-                {% if language == 'es' %}
-                    Bancos y montos financiados
+            <div class="divider"></div>
+
+            <div class="panel-header" style="margin-top: 4px;">
+              <div>
+                <div class="panel-title">
+                  {% if form.language == 'es' %}
+                    Financiamiento por banco
+                  {% else %}
+                    Financing by bank
+                  {% endif %}
+                </div>
+                <div class="panel-sub">
+                  {% if form.language == 'es' %}
+                    Ingresa los montos financiados y el % de comisión de cada banco.
+                  {% else %}
+                    Enter financed amounts and each bank's merchant fee %.
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <table class="bank-table">
+              <thead>
+              <tr>
+                <th>
+                  {% if form.language == 'es' %}
+                    Banco / Financiera
+                  {% else %}
+                    Bank / Lender
+                  {% endif %}
+                </th>
+                <th>
+                  {% if form.language == 'es' %}
+                    Monto financiado ($)
+                  {% else %}
+                    Amount financed ($)
+                  {% endif %}
+                </th>
+                <th class="align-right">Rate %</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for key, bank in banks.items() %}
+                {% set name_en = bank[0] %}
+                {% set name_es = bank[1] %}
+                {% set rates = bank[2] %}
+                {% set b = bank_form[key] %}
+                <tr>
+                  <td>
+                    {% if form.language == 'es' %}
+                      {{ name_es }}
+                    {% else %}
+                      {{ name_en }}
+                    {% endif %}
+                  </td>
+                  <td>
+                    <input type="number" step="0.01"
+                           name="{{ key }}_amount"
+                           value="{{ b.amount }}"
+                           placeholder="0.00"
+                           style="width: 100%; border-radius: 999px; border: 1px solid rgba(148,163,184,0.4); background: radial-gradient(circle at top left, rgba(148,163,184,0.08), rgba(15,23,42,1)); color: #f9fafb; padding: 5px 9px; font-size: 11px; outline: none;">
+                  </td>
+                  <td class="align-right">
+                    <select name="{{ key }}_rate" class="rate-select">
+                      {% for r in rates %}
+                        <option value="{{ r }}" {% if b.rate == r %}selected{% endif %}>
+                          {{ "%.2f"|format(r) }}%
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary">
+                <span class="icon">⚡</span>
+                {% if form.language == 'es' %}
+                  Calcular
                 {% else %}
-                    Financing companies & financed amounts
+                  Calculate
                 {% endif %}
-            </h5>
+              </button>
+            </div>
 
-            <p class="small-note">
-                {% if language == 'es' %}
-                    Ingrese cuánto financia cada banco para este negocio y, si aplica,
-                    seleccione el porcentaje de comisión (merchant fee).
-                {% else %}
-                    Enter how much each bank is financing for this deal and, if applicable,
-                    select the merchant fee % for that bank.
-                {% endif %}
-            </p>
+            {% if results %}
+              <div class="results-card">
+                <div class="results-title">
+                  {{ results.labels.results_title }}
+                </div>
+                <div class="results-grid">
+                  <div>
+                    <ul class="results-list">
+                      <li>
+                        <strong>{{ results.labels.bike_before_tax }}</strong>
+                        ${{ "%.2f"|format(results.bike_before_tax) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.tax_amount }}</strong>
+                        ${{ "%.2f"|format(results.tax_amount) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.subtotal_no_shipping }}</strong>
+                        ${{ "%.2f"|format(results.subtotal_no_shipping) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.shipping }}</strong>
+                        ${{ "%.2f"|format(results.shipping) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.gross_income }}</strong>
+                        ${{ "%.2f"|format(results.gross_income) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.total_bank }}</strong>
+                        ${{ "%.2f"|format(results.total_bank_fees) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.no_pass_net }}</strong>
+                        ${{ "%.2f"|format(results.net_no_pass) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.no_pass_profit }}</strong>
+                        ${{ "%.2f"|format(results.profit_no_pass) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.pass_price }}</strong>
+                        ${{ "%.2f"|format(results.customer_price_with_fees) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.pass_net }}</strong>
+                        ${{ "%.2f"|format(results.net_with_pass) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.pass_profit }}</strong>
+                        ${{ "%.2f"|format(results.profit_with_pass) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.commission_total }}</strong>
+                        ${{ "%.2f"|format(results.commission_total) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.commission_store }}</strong>
+                        ${{ "%.2f"|format(results.commission_store) }}
+                      </li>
+                      <li>
+                        <strong>{{ results.labels.commission_seller }}</strong>
+                        ${{ "%.2f"|format(results.commission_seller) }}
+                      </li>
+                    </ul>
+                  </div>
 
-            <div class="row">
-                {% for key, bank in banks.items() %}
-                    {% set name_en, name_es, rates = bank %}
-                    <div class="col-12 col-md-6 mb-3">
-                        <div class="border rounded p-2">
-                            <div class="mb-1 fw-bold">
-                                {{ name_es if language == 'es' else name_en }}
-                            </div>
-                            <label class="form-label mb-1">
-                                {% if language == 'es' %}Monto financiado{% else %}Amount financed{% endif %}
-                            </label>
-                            <input type="number"
-                                   class="form-control mb-2"
-                                   name="{{ key }}_amount"
-                                   step="0.01"
-                                   value="{{ bank_form[key].amount }}">
-
-                            <label class="form-label mb-1">
-                                {% if language == 'es' %}Porcentaje de comisión{% else %}Merchant fee %{% endif %}
-                            </label>
-
-                            {% if rates|length > 1 %}
-                                <select class="form-select"
-                                        name="{{ key }}_rate">
-                                    {% for r in rates %}
-                                        <option value="{{ r }}"
-                                          {% if bank_form[key].rate == r %}selected{% endif %}>
-                                            {{ r }}%
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            {% else %}
-                                <input type="number"
-                                       class="form-control"
-                                       name="{{ key }}_rate"
-                                       step="0.01"
-                                       value="{{ bank_form[key].rate }}"
-                                       {% if rates|length == 1 %}readonly{% endif %}>
-                            {% endif %}
+                  <div class="results-bank">
+                    <div><strong>{{ results.labels.bank_breakdown_title }}</strong></div>
+                    {% for b in results.bank_results %}
+                      {% if b.amount > 0 %}
+                        <div class="results-bank-item">
+                          {% if form.language == 'es' %}
+                            {{ b.name_es }}
+                          {% else %}
+                            {{ b.name_en }}
+                          {% endif %}
+                          – ${{ "%.2f"|format(b.amount) }}
+                          @ {{ "%.2f"|format(b.rate) }}% =
+                          ${{ "%.2f"|format(b.fee) }}
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
-
-            <!-- BUTTONS -->
-            <div class="d-grid gap-2 mt-3">
-                <button type="submit" class="btn btn-primary">
-                    {% if language == 'es' %}Calcular{% else %}Calculate{% endif %}
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- RESULTS CARD -->
-    {% if results %}
-    <div class="card p-3">
-
-        <h4>{{ results.labels.results_title }}</h4>
-
-        <div class="section-title">
-            {% if language == 'es' %}Resumen de precios{% else %}Price breakdown{% endif %}
-        </div>
-
-        <div class="result-row">
-            <strong>{{ results.labels.bike_before_tax }}</strong>
-            ${{ '%.2f'|format(results.bike_before_tax) }}
-        </div>
-        <div class="result-row">
-            <strong>{{ results.labels.tax_amount }}</strong>
-            ${{ '%.2f'|format(results.tax_amount) }}
-        </div>
-        <div class="result-row">
-            <strong>{{ results.labels.subtotal_no_shipping }}</strong>
-            ${{ '%.2f'|format(results.subtotal_no_shipping) }}
-        </div>
-        <div class="result-row">
-            <strong>{{ results.labels.shipping }}</strong>
-            ${{ '%.2f'|format(results.shipping) }}
-        </div>
-        <div class="result-row">
-            <strong>{{ results.labels.gross_income }}</strong>
-            ${{ '%.2f'|format(results.gross_income) }}
-        </div>
-        <div class="result-row">
-            <strong>{{ results.labels.total_bank }}</strong>
-            ${{ '%.2f'|format(results.total_bank_fees) }}
-        </div>
-
-        <div class="section-title">
-            {{ results.labels.bank_breakdown_title }}
-        </div>
-        <ul class="mb-3">
-            {% for b in results.bank_results %}
-                {% if b.amount > 0 %}
-                    <li>
-                        {{ b.name_es if language == 'es' else b.name_en }}:
-                        ${{ '%.2f'|format(b.amount) }}
-                        × {{ '%.2f'|format(b.rate) }}% =
-                        ${{ '%.2f'|format(b.fee) }}
-                    </li>
-                {% endif %}
-            {% endfor %}
-        </ul>
-
-        <!-- CASE 1: NO PASAS COMISIÓN DEL BANCO -->
-        <div class="section-title">
-            {{ results.labels.no_pass_net }}
-        </div>
-        <div class="result-row">
-            <strong>
-                {% if language == 'es' %}
-                    Neto a la tienda (NO pasas comisión del banco):
-                {% else %}
-                    Net to store (DO NOT pass bank fees):
-                {% endif %}
-            </strong>
-            ${{ '%.2f'|format(results.net_no_pass) }}
-        </div>
-        <div class="result-row">
-            <strong>{{ results.labels.no_pass_profit }}</strong>
-            ${{ '%.2f'|format(results.profit_no_pass) }}
-        </div>
-
-        <!-- CASE 2: SI PASAS COMISIÓN DEL BANCO -->
-        <div class="section-title">
-            {{ results.labels.pass_price }}
-        </div>
-
-        <div class="result-row">
-            <strong>
-                {% if language == 'es' %}
-                    Precio al cliente (incluyendo comisiones del banco):
-                {% else %}
-                    Customer price (including bank fees):
-                {% endif %}
-            </strong>
-            ${{ '%.2f'|format(results.customer_price_with_fees) }}
-        </div>
-
-        <div class="result-row">
-            <strong>{{ results.labels.pass_net }}</strong>
-            ${{ '%.2f'|format(results.net_with_pass) }}
-        </div>
-
-        <!-- COMMISSION WHEN FEES ARE PASSED -->
-        {% set commission_pass = results.profit_with_pass %}
-        {% set commission_store = commission_pass / 2 %}
-        {% set commission_seller = commission_pass / 2 %}
-
-        <div class="section-title">
-            {% if language == 'es' %}
-                Si Pasas Comisión Del Banco – Comisión
-            {% else %}
-                If You PASS Bank Fees – Commission
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
             {% endif %}
+          </form>
         </div>
+      </div>
 
-        <div class="result-row">
-            <strong>
-                {% if language == 'es' %}
-                    Comisión total (después de costo, sin contar envío):
-                {% else %}
-                    Total commission (after cost, shipping excluded):
-                {% endif %}
-            </strong>
-            ${{ '%.2f'|format(commission_pass) }}
-        </div>
-
-        <div class="result-row">
-            <strong>
-                {% if language == 'es' %}
-                    Comisión para la tienda:
-                {% else %}
-                    Commission for the store:
-                {% endif %}
-            </strong>
-            ${{ '%.2f'|format(commission_store) }}
-        </div>
-
-        <div class="result-row">
-            <strong>
-                {% if language == 'es' %}
-                    Comisión para el vendedor:
-                {% else %}
-                    Commission for the seller:
-                {% endif %}
-            </strong>
-            ${{ '%.2f'|format(commission_seller) }}
-        </div>
-
+      <div class="column">
+        <!-- Right column kept empty / for future expansion -->
+      </div>
     </div>
-    {% endif %}
-
+  </div>
 </div>
-
 </body>
 </html>
