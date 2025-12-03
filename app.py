@@ -14,10 +14,6 @@ BANKS = {
     "synchrony": ("Synchrony", "Synchrony", [5.0, 9.0, 13.5]),
     "afterpay": ("Afterpay", "Afterpay", [6.0]),
     "usbank": ("US Bank", "US Bank", [5.0, 8.0, 10.0, 12.0, 14.0, 16.0]),
-    "snap": ("Snap Finance", "Snap Finance", [2.0]),
-    "progressive": ("Progressive", "Progressive", [2.0]),
-    "zip": ("Zip", "Zip", [6.0]),
-    "klarna": ("Klarna", "Klarna", [6.0]),
 }
 
 
@@ -51,12 +47,15 @@ def index():
         "language": lang,
     }
 
-    # Bank form values (amount + selected rate)
+    # Bank form values (amount + selected rate + names)
     bank_form = {}
     for key, (name_en, name_es, rates) in BANKS.items():
         bank_form[key] = {
             "amount": "",
-            "rate": rates[0],  # default dropdown selection
+            "rate": rates[0],   # default rate in dropdown
+            "name_en": name_en,
+            "name_es": name_es,
+            "rates": rates,
         }
 
     results = None
@@ -65,8 +64,7 @@ def index():
         # --- Core inputs ---
         total_price = parse_float(request.form.get("total_price"))
         include_shipping = request.form.get("include_shipping") == "on"
-        # tax_rate is fixed constant:
-        tax_rate_percent = TAX_RATE_PERCENT
+        tax_rate_percent = TAX_RATE_PERCENT  # fixed
         bike_cost = parse_float(request.form.get("bike_cost"))
         seller_commission = parse_float(request.form.get("seller_commission"))
 
@@ -107,18 +105,22 @@ def index():
                 }
             )
 
-        # --- Total financed amounts (for "missing amount" field) ---
+        # --- TOTAL FINANCED + MISSING AMOUNT (NEW PART) ---
+        # Sum of all financed amounts + their fees
         total_financed_with_fees = sum(
             (b["amount"] or 0.0) + (b["fee"] or 0.0) for b in bank_results
         )
-        if total_price:
-            # This is exactly what you asked for:
-            # total price - (all financed amounts + their fees)
+
+        if total_price > 0:
+            # Amount missing from total price:
+            # total price - (total financed amount + fees)
             missing_amount = total_price - total_financed_with_fees
+            # optional: avoid negative if they finance "too much"
+            # missing_amount = max(total_price - total_financed_with_fees, 0.0)
         else:
             missing_amount = 0.0
 
-        # --- Core math ---
+        # --- Core math (rest is same logic as before) ---
         shipping_amount = FIXED_SHIPPING_AMOUNT if include_shipping else 0.0
 
         # Bike+tax is total minus shipping (shipping is NOT taxed and NOT revenue)
@@ -145,17 +147,15 @@ def index():
         net_to_store_with_bank_pass = gross_income_no_shipping
 
         # Commission when PASSING fees:
-        # We treat the last line as commission amount based on bike margin
         commission_pass_total = bike_price_before_tax - bike_cost
         if commission_pass_total < 0:
             commission_pass_total = 0.0
         commission_pass_store = commission_pass_total / 2.0
         commission_pass_seller = commission_pass_total / 2.0
 
-        # For the legacy "profit_with_pass" field we now surface the commission total
         profit_with_bank_pass = commission_pass_total
 
-        # Build labels depending on language
+        # --- Labels ---
         if lang == "es":
             labels = {
                 "results_title": "Resultados",
