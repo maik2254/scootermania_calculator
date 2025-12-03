@@ -14,9 +14,10 @@ BANKS = {
     "synchrony": ("Synchrony", "Synchrony", [5.0, 9.0, 13.5]),
     "afterpay": ("Afterpay", "Afterpay", [6.0]),
     "usbank": ("US Bank", "US Bank", [5.0, 8.0, 10.0, 12.0, 14.0, 16.0]),
-    "dignifi": ("Dignifi", "Dignifi", [6.0, 8.0, 10.0]),
-    "square": ("Square Installments", "Square Installments", [3.0, 5.0, 7.0]),
-    "wave": ("Wave Financing", "Wave Financing", [2.0, 4.0, 6.0]),
+    "snap": ("Snap Finance", "Snap Finance", [2.0]),
+    "progressive": ("Progressive", "Progressive", [2.0]),
+    "zip": ("Zip", "Zip", [6.0]),
+    "klarna": ("Klarna", "Klarna", [6.0]),
 }
 
 
@@ -55,10 +56,7 @@ def index():
     for key, (name_en, name_es, rates) in BANKS.items():
         bank_form[key] = {
             "amount": "",
-            "rate": rates[0],
-            "name_en": name_en,
-            "name_es": name_es,
-            "rates": rates,
+            "rate": rates[0],  # default dropdown selection
         }
 
     results = None
@@ -109,6 +107,17 @@ def index():
                 }
             )
 
+        # --- Total financed amounts (for "missing amount" field) ---
+        total_financed_with_fees = sum(
+            (b["amount"] or 0.0) + (b["fee"] or 0.0) for b in bank_results
+        )
+        if total_price:
+            # This is exactly what you asked for:
+            # total price - (all financed amounts + their fees)
+            missing_amount = total_price - total_financed_with_fees
+        else:
+            missing_amount = 0.0
+
         # --- Core math ---
         shipping_amount = FIXED_SHIPPING_AMOUNT if include_shipping else 0.0
 
@@ -145,17 +154,6 @@ def index():
 
         # For the legacy "profit_with_pass" field we now surface the commission total
         profit_with_bank_pass = commission_pass_total
-
-        # --- Total financed amounts (for "amount missing" field) ---
-        total_financed_principal = sum(
-            (b["amount"] or 0.0) for b in bank_results
-        )
-        total_financed_with_fees = sum(
-            (b["amount"] or 0.0) + (b["fee"] or 0.0) for b in bank_results
-        )
-        # This is what you asked for:
-        # total price - (all financed amounts + their fees)
-        missing_amount = total_price - total_financed_with_fees if total_price else 0.0
 
         # Build labels depending on language
         if lang == "es":
